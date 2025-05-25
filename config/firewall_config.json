@@ -1,0 +1,12 @@
+{
+    "allowed_ips": [],
+    "blocked_ports": [],
+    "blocked_ips": [],
+    "external_interface": null,
+    "internal_interface": null,
+    "internal_network": null,
+    "ids_ips_enabled": false,
+    "dos_protection_enabled": false,
+    "nat_enabled": false,
+    "stateful_enabled": false
+}
