@@ -1,5 +1,8 @@
 name: BaselFirewall CI
 
+# Workflow for testing and deploying BaselFirewall
+# Includes linting, testing, and code coverage reporting
+
 on:
   push:
     branches: [ "main" ]
@@ -42,4 +45,9 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true 
+        fail_ci_if_error: true
+        
+    - name: Check Python version
+      run: |
+        python --version
+        pip --version 
