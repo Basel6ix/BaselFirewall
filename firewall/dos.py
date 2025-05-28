@@ -63,19 +63,29 @@ def limit_connection_rate():
 
 def enable_dos_protection():
     """Enable DoS protection"""
-    set_feature_state("dos_protection_enabled", True)
-    log_event("DoS protection enabled", "INFO")
-    print("[*] DoS protection enabled.")
-    protect_against_syn_flood()
-    protect_against_icmp_flood()
-    limit_connection_rate()
+    try:
+        set_feature_state("dos_protection_enabled", True)
+        log_event("DoS protection enabled", "INFO")
+        print("[*] DoS protection enabled.")
+        protect_against_syn_flood()
+        protect_against_icmp_flood()
+        limit_connection_rate()
+        return True
+    except Exception as e:
+        log_event(f"Failed to enable DoS protection: {str(e)}", "ERROR")
+        return False
 
 def disable_dos_protection():
     """Disable DoS protection"""
-    set_feature_state("dos_protection_enabled", False)
-    log_event("DoS protection disabled", "WARNING")
-    print("[*] DoS protection disabled.")
-    subprocess.call(["iptables", "-F", "INPUT"])
+    try:
+        set_feature_state("dos_protection_enabled", False)
+        log_event("DoS protection disabled", "WARNING")
+        print("[*] DoS protection disabled.")
+        subprocess.call(["iptables", "-F", "INPUT"])
+        return True
+    except Exception as e:
+        log_event(f"Failed to disable DoS protection: {str(e)}", "ERROR")
+        return False
 
 def view_connection_logs(lines=30):
     if not os.path.exists(CONNECTION_LOG_FILE):

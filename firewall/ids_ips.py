@@ -149,16 +149,26 @@ def _run_ips():
 
 def enable_ids_ips():
     """Enable IDS/IPS functionality"""
-    print("[*] IPS scanning started on interface eth0...")
-    set_feature_state("ids_ips_enabled", True)
-    log_event("IDS/IPS enabled", "INFO")
-    print("[*] IDS/IPS enabled successfully.")
+    try:
+        print("[*] IPS scanning started on interface eth0...")
+        set_feature_state("ids_ips_enabled", True)
+        log_event("IDS/IPS enabled", "INFO")
+        print("[*] IDS/IPS enabled successfully.")
+        return True
+    except Exception as e:
+        log_event(f"Failed to enable IDS/IPS: {str(e)}", "ERROR")
+        return False
 
 def disable_ids_ips():
     """Disable IDS/IPS functionality"""
-    set_feature_state("ids_ips_enabled", False)
-    log_event("IDS/IPS disabled", "WARNING")
-    print("[*] IDS/IPS disabled.")
+    try:
+        set_feature_state("ids_ips_enabled", False)
+        log_event("IDS/IPS disabled", "WARNING")
+        print("[*] IDS/IPS disabled.")
+        return True
+    except Exception as e:
+        log_event(f"Failed to disable IDS/IPS: {str(e)}", "ERROR")
+        return False
 
 def record_failed_login(ip):
     """Record a failed login attempt for IDS analysis"""
