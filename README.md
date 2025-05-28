@@ -4,6 +4,11 @@
 
 A comprehensive network security solution with advanced firewall capabilities, intrusion detection/prevention, and user-friendly management interface.
 
+## Author Information
+**Author:** Basel Abu-Radaha (B. Abu-Radaha)  
+**Supervisor:** Mohammad Nabrawi (M. Nabrawi)  
+**Contact:** baselyt24@gmail.com
+
 ## Overview
 **BaselFirewall** is a Python-based personal firewall developed for Linux systems. It provides comprehensive network protection using rule-based filtering, intrusion detection, stateful inspection, and advanced security features. The project includes both a command-line interface (CLI) and a graphical interface (GUI) for flexible management.
 

@@ -1,5 +1,10 @@
 # Contributing to BaselFirewall
 
+## Project Information
+**Author:** Basel Abu-Radaha (B. Abu-Radaha)  
+**Supervisor:** Mohammad Nabrawi (M. Nabrawi)  
+**Contact:** baselyt24@gmail.com
+
 ## Table of Contents
 1. [Code of Conduct](#code-of-conduct)
 2. [Getting Started](#getting-started)
