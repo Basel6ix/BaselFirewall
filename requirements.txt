@@ -6,13 +6,11 @@ netifaces>=0.11.0
 psutil>=5.9.5
 
 # GUI dependencies
-tk>=8.6.12
 matplotlib>=3.7.1
 
 # Network analysis
 scapy>=2.5.0
 pyshark>=0.6.0
-tcpdump>=4.99.4  # System package, install via package manager
 
 # CLI formatting and utilities
 colorama>=0.4.6

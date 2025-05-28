@@ -1,1 +1,8 @@
-{}
+{
+    "basel6ix": {
+        "password": "$2b$12$pwPyJQBqKEkWk5twEGS8FuAT7nokkjGDpdZO4z2CZSLDeL7M3BZXq",
+        "role": "admin",
+        "created_at": "2024-03-20T00:00:00",
+        "created_by": "initial_setup"
+    }
+}

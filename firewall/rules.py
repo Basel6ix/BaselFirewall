@@ -4,6 +4,9 @@ from firewall.config_manager import load_config, save_config
 from firewall.stateful import enable_stateful_inspection_rules, disable_stateful_inspection_rules
 from firewall.utils import is_valid_ip
 from firewall.logging import log_event
+from firewall.dos import disable_dos_protection
+from firewall.ids_ips import disable_ids_ips
+from firewall.nat import disable_nat
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), '../config/firewall_config.json')
 
@@ -171,14 +174,55 @@ def remove_blocked_port(port):
     return False
 
 def reset_firewall():
-    disable_stateful_inspection_rules()
-    run_command("iptables -F")  # Flush all rules
-    run_command("iptables -X")  # Delete user-defined chains
-    set_default_policy()
-    config = {"allowed_ips": [], "blocked_ports": [], "blocked_ips": []}
-    save_config(config)
-    apply_essential_rules()  # Reapply essential rules after reset
-    log_event("Firewall rules reset", "CRITICAL")
+    """
+    Reset firewall to default state while preserving configured rules.
+    
+    This function:
+    1. Disables all advanced features
+    2. Flushes all chains
+    3. Sets default policies
+    4. Reapplies saved rules from config
+    
+    Returns:
+        bool: True if reset was successful, False otherwise
+    """
+    try:
+        # Store current configuration
+        config = load_config()
+        
+        # Disable advanced features
+        disable_stateful_inspection_rules()
+        
+        # Flush all rules and user-defined chains
+        run_command("iptables -F")
+        run_command("iptables -X")
+        
+        # Set default policies
+        set_default_policy()
+        
+        # Apply essential rules first
+        apply_essential_rules()
+        
+        # Reapply saved rules from config
+        for ip in config.get("allowed_ips", []):
+            run_command(f"iptables -A INPUT -s {ip} -j ACCEPT")
+            log_event(f"Restored allowed IP: {ip}", "INFO")
+        
+        for ip in config.get("blocked_ips", []):
+            run_command(f"iptables -A INPUT -s {ip} -j DROP")
+            log_event(f"Restored blocked IP: {ip}", "INFO")
+        
+        for port in config.get("blocked_ports", []):
+            if is_valid_port(port):
+                run_command(f"iptables -A INPUT -p tcp --dport {port} -j DROP")
+                run_command(f"iptables -A INPUT -p udp --dport {port} -j DROP")
+                log_event(f"Restored blocked port: {port}", "INFO")
+        
+        log_event("Firewall rules reset and restored", "CRITICAL")
+        return True
+    except Exception as e:
+        log_event(f"Failed to reset firewall: {str(e)}", "ERROR")
+        return False
 
 def enable_stateful_inspection():
     enable_stateful_inspection_rules()
@@ -196,3 +240,62 @@ def clear_rules():
     save_config(config)
     apply_firewall_rules()  # Reapply rules after clearing
     log_event("All firewall rules cleared", "WARNING")
+
+def disable_firewall():
+    """
+    Completely disables the firewall by:
+    1. Flushing all rules
+    2. Setting all chains to ACCEPT
+    3. Disabling all protection features
+    4. Saving the disabled state in config
+    
+    Returns:
+        bool: True if firewall was successfully disabled, False otherwise
+    """
+    try:
+        # Disable all protection features
+        disable_dos_protection()
+        disable_ids_ips()
+        disable_nat()
+        disable_stateful_inspection()
+        
+        # Flush all rules and delete custom chains
+        run_command("iptables -F")  # Flush all rules
+        run_command("iptables -X")  # Delete user-defined chains
+        
+        # Set all default policies to ACCEPT
+        run_command("iptables -P INPUT ACCEPT")
+        run_command("iptables -P FORWARD ACCEPT")
+        run_command("iptables -P OUTPUT ACCEPT")
+        
+        # Update config to reflect disabled state
+        config = load_config()
+        config["firewall_enabled"] = False
+        save_config(config)
+        
+        log_event("Firewall completely disabled", "CRITICAL")
+        return True
+    except Exception as e:
+        log_event(f"Failed to disable firewall: {str(e)}", "ERROR")
+        return False
+
+def enable_firewall():
+    """
+    Re-enables the firewall with default configuration.
+    
+    Returns:
+        bool: True if firewall was successfully enabled, False otherwise
+    """
+    try:
+        config = load_config()
+        config["firewall_enabled"] = True
+        save_config(config)
+        
+        # Reset to default state
+        reset_firewall()
+        
+        log_event("Firewall re-enabled with default configuration", "CRITICAL")
+        return True
+    except Exception as e:
+        log_event(f"Failed to enable firewall: {str(e)}", "ERROR")
+        return False
