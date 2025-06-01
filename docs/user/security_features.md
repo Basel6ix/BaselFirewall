@@ -1,223 +1,217 @@
 # Security Features Guide
 
-## Overview
-BaselFirewall provides comprehensive security features to protect your network from various threats. This guide details each security feature and its configuration.
+This guide details the security features available in BaselFirewall and how to configure them effectively.
 
-## Intrusion Detection/Prevention System (IDS/IPS)
+## Core Security Features
 
-### Features
-- Real-time threat detection
-- Pattern matching engine
-- Custom rule support
-- Automatic blocking
-- Alert generation
+### 1. Packet Filtering
 
-### Configuration
+BaselFirewall provides advanced packet filtering capabilities:
+
+- **IP-based Filtering**
+  ```bash
+  # Allow specific IP
+  sudo python main.py --allow-ip 192.168.1.100
+  
+  # Block specific IP
+  sudo python main.py --block-ip 10.0.0.5
+  ```
+
+- **Port-based Filtering**
+  ```bash
+  # Block specific port
+  sudo python main.py --block-port 22
+  
+  # Allow specific port
+  sudo python main.py --allow-port 80
+  ```
+
+### 2. Intrusion Detection System (IDS)
+
+The IDS monitors network traffic for suspicious activity:
+
+- Real-time packet inspection
+- Pattern-based attack detection
+- Customizable detection rules
+- Alert generation for suspicious activity
+
+Configuration:
 ```bash
-# Enable IDS/IPS
-sudo baselfirewall-cli ids enable
+# Enable IDS
+sudo python main.py --enable-ids
 
-# Set sensitivity
-sudo baselfirewall-cli ids sensitivity high
+# Set custom threshold
+sudo python main.py --set-ids-threshold 100
 
-# Add custom rule
-sudo baselfirewall-cli ids rule add "alert tcp any any -> any 80 (msg:'HTTP Attack'; content:'../'; sid:1000001;)"
+# View IDS logs
+sudo python main.py --view-ids-logs
 ```
 
-### Best Practices
-1. Regular rule updates
-2. Monitor false positives
-3. Tune sensitivity
-4. Review logs daily
-5. Test new rules
+### 3. DoS Protection
 
-## DoS Protection
+Protection against Denial of Service attacks:
 
-### Features
-- Connection rate limiting
 - SYN flood protection
-- UDP flood protection
 - ICMP flood protection
-- Resource protection
+- Connection rate limiting
+- IP blacklisting for attackers
 
-### Configuration
+Settings:
 ```bash
 # Enable DoS protection
-sudo baselfirewall-cli dos enable
+sudo python main.py --enable-dos-protection
 
-# Set connection limits
-sudo baselfirewall-cli dos limit connections 100
-sudo baselfirewall-cli dos limit rate 50
-
-# Configure blacklist
-sudo baselfirewall-cli dos blacklist add 192.168.1.100
+# Configure rate limits
+sudo python main.py --set-rate-limit 50
 ```
 
-### Thresholds
-| Attack Type | Default Limit | Recommended |
-|-------------|---------------|-------------|
-| SYN Flood | 100/sec | 50-200/sec |
-| UDP Flood | 200/sec | 100-300/sec |
-| ICMP Flood | 50/sec | 25-75/sec |
-| HTTP Flood | 500/sec | 200-1000/sec |
+### 4. Stateful Inspection
 
-## Network Address Translation (NAT)
+Intelligent packet filtering based on connection state:
 
-### Features
-- Source NAT (SNAT)
-- Destination NAT (DNAT)
-- Port forwarding
-- DMZ configuration
-- Custom rules
+- Tracks connection states
+- Allows related traffic
+- Blocks invalid packets
+- Maintains connection table
 
-### Configuration
-```bash
-# Enable NAT
-sudo baselfirewall-cli nat enable
-
-# Configure port forwarding
-sudo baselfirewall-cli nat forward add 80 192.168.1.100 8080
-
-# Set up DMZ
-sudo baselfirewall-cli nat dmz set 192.168.1.200
-```
-
-### Common Scenarios
-1. Web server hosting
-2. Game server
-3. Remote desktop
-4. VPN server
-5. Mail server
-
-## Stateful Packet Inspection
-
-### Features
-- Connection tracking
-- Protocol validation
-- State table management
-- Dynamic rules
-- Session monitoring
-
-### Configuration
+Enable/Disable:
 ```bash
 # Enable stateful inspection
-sudo baselfirewall-cli state enable
+sudo python main.py --enable-stateful
 
-# Set table size
-sudo baselfirewall-cli state table-size 65536
-
-# Configure timeouts
-sudo baselfirewall-cli state timeout tcp 3600
+# Disable stateful inspection
+sudo python main.py --disable-stateful
 ```
 
-### State Types
-- NEW
-- ESTABLISHED
-- RELATED
-- INVALID
-- UNTRACKED
+### 5. Network Address Translation (NAT)
 
-## Access Control
+NAT functionality for network security:
 
-### Features
-- IP-based rules
-- Port-based rules
-- Protocol rules
-- Time-based rules
-- Geolocation rules
+- Source NAT for outgoing traffic
+- Destination NAT for incoming traffic
+- Port forwarding capabilities
+- NAT logging and tracking
 
-### Configuration
+Configuration:
 ```bash
-# Add IP rule
-sudo baselfirewall-cli acl add ip 192.168.1.0/24 allow
+# Enable NAT
+sudo python main.py --enable-nat
 
-# Add port rule
-sudo baselfirewall-cli acl add port 80 allow
-
-# Add time rule
-sudo baselfirewall-cli acl add time "8:00-17:00" allow
+# Configure NAT settings
+sudo python main.py --set-nat-interface eth0
 ```
 
-### Rule Priority
-1. Emergency rules
-2. Administrative rules
-3. Service rules
-4. User rules
-5. Default rules
+## Authentication & Access Control
 
-## Logging and Monitoring
+### 1. User Management
 
-### Features
-- Security event logs
-- System logs
-- Traffic logs
-- Performance logs
-- Audit logs
+- Role-based access control (admin/user)
+- Secure password storage using bcrypt
+- Password policy enforcement
+- Session management
 
-### Configuration
+User operations:
 ```bash
-# Enable logging
-sudo baselfirewall-cli log enable
+# Add new user
+sudo python register_user.py
 
-# Set log level
-sudo baselfirewall-cli log level debug
-
-# Configure rotation
-sudo baselfirewall-cli log rotate size 100M
+# Change password
+sudo python manage_users.py
 ```
 
-### Log Locations
-- `/var/log/baselfirewall/security.log`
-- `/var/log/baselfirewall/system.log`
-- `/var/log/baselfirewall/access.log`
-- `/var/log/baselfirewall/error.log`
-- `/var/log/baselfirewall/audit.log`
+### 2. Login Security
+
+- Rate limiting for login attempts
+- IP-based blocking after failed attempts
+- Session timeout settings
+- Secure session handling
+
+## Logging & Monitoring
+
+### 1. Event Logging
+
+BaselFirewall maintains detailed logs of:
+
+- Security events
+- Connection attempts
+- Rule matches
+- System status
+- User actions
+
+View logs:
+```bash
+# View all logs
+sudo python main.py --view-logs
+
+# View security alerts
+sudo python main.py --view-alerts
+
+# Export logs
+sudo python main.py --export-logs output.txt
+```
+
+### 2. Real-time Monitoring
+
+Monitor system activity:
+```bash
+# Start monitoring
+sudo python main.py --monitor
+
+# View live connections
+sudo python main.py --connections
+
+# View blocked IPs
+sudo python main.py --show-blocked
+```
 
 ## Best Practices
 
-### General Security
-1. Regular updates
-2. Backup configuration
-3. Monitor logs
-4. Test changes
-5. Document policies
+1. **Regular Updates**
+   - Keep BaselFirewall updated
+   - Update system packages
+   - Review and update rules regularly
 
-### Performance
-1. Optimize rules
-2. Monitor resources
-3. Regular maintenance
-4. Clean old logs
-5. Update signatures
+2. **Configuration Security**
+   - Use strong passwords
+   - Limit admin access
+   - Backup configurations
+   - Review logs regularly
 
-### Compliance
-1. Regular audits
-2. Policy review
-3. Access control
-4. Incident response
-5. Documentation
+3. **Network Security**
+   - Start with restrictive rules
+   - Monitor for false positives
+   - Test rule changes
+   - Document configuration changes
+
+4. **Performance Optimization**
+   - Regular log rotation
+   - Optimize rule ordering
+   - Monitor system resources
+   - Clean old connections
 
 ## Troubleshooting
 
 ### Common Issues
-1. High CPU usage
-2. Memory leaks
-3. False positives
-4. Rule conflicts
-5. Performance degradation
 
-### Diagnostics
-```bash
-# Check system status
-sudo baselfirewall-cli status
+1. **High CPU Usage**
+   - Check logging level
+   - Review rule complexity
+   - Monitor connection table size
 
-# Test configuration
-sudo baselfirewall-cli test
+2. **False Positives**
+   - Adjust IDS sensitivity
+   - Review blocked IPs
+   - Check rule conflicts
 
-# View diagnostics
-sudo baselfirewall-cli diagnostics
-```
+3. **Connection Issues**
+   - Verify rule ordering
+   - Check NAT configuration
+   - Review blocked ports
 
-## Next Steps
-- [User Management](user_management.md)
-- [Technical Documentation](../technical/)
-- [API Reference](../technical/api_reference.md) 
+## Support
+
+For additional assistance:
+- Check the [FAQ](../FAQ.md)
+- Review [Troubleshooting Guide](../TROUBLESHOOTING.md)
+- Submit issues on GitHub
+- Contact support team 

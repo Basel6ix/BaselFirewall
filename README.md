@@ -1,74 +1,39 @@
-# BaselFirewall - Personal Firewall Project
+# BaselFirewall
 
-© 2025 B. Abu-Radaha. All Rights Reserved.
-
-A comprehensive network security solution with advanced firewall capabilities, intrusion detection/prevention, and user-friendly management interface.
+A comprehensive, Python-based personal firewall for Linux systems with advanced security features and user-friendly interfaces.
 
 ## Author Information
-**Author:** Basel Abu-Radaha (B. Abu-Radaha)  
-**Supervisor:** Mohammad Nabrawi (M. Nabrawi)  
-**Contact:** baselyt24@gmail.com
 
-## Overview
-**BaselFirewall** is a Python-based personal firewall developed for Linux systems. It provides comprehensive network protection using rule-based filtering, intrusion detection, stateful inspection, and advanced security features. The project includes both a command-line interface (CLI) and a graphical interface (GUI) for flexible management.
+- **Author:** Basel Abu-Radaha (B. Abu-Radaha)
+- **Supervisor:** Mohammad Nabrawi (M. Nabrawi)
+- **Institution:** Hittien College
+- **Project Type:** Graduation Project (2025)
+- **Contact:** baselyt24@gmail.com
+- **License:** MIT
 
-## Key Features
-- **Advanced Packet Filtering**
-  - IP-based allow/block lists
-  - Port-based filtering
-  - Protocol-specific rules
-  - Rule prioritization
-  - Stateful connection tracking
+## Features
 
-- **Intrusion Detection & Prevention (IDS/IPS)**
-  - Real-time packet inspection
-  - SYN flood detection
-  - DoS/DDoS protection
-  - Brute force attack prevention
-  - Configurable detection thresholds
+- **Advanced Packet Filtering**: Fine-grained control over network traffic
+- **Intrusion Detection/Prevention (IDS/IPS)**: Real-time threat detection and prevention
+- **DoS Protection**: Defense against Denial of Service attacks
+- **Network Address Translation (NAT)**: Support for network address translation
+- **Stateful Inspection**: Intelligent packet filtering based on connection state
+- **User Authentication**: Secure multi-user access with role-based permissions
+- **Dual Interface**: Both CLI and GUI for flexible management
+- **Comprehensive Logging**: Detailed activity tracking and alert system
 
-- **Authentication & Access Control**
-  - Role-based access (admin/user)
-  - Secure password hashing (bcrypt)
-  - Rate limiting for login attempts
-  - Session management
-  - Password policy enforcement
+## Quick Start
 
-- **Monitoring & Logging**
-  - Detailed event logging
-  - Real-time alerts
-  - Traffic analysis
-  - System statistics
-  - Audit trail for admin actions
-
-- **User Interface**
-  - Feature-rich CLI
-  - Modern GUI with Tkinter
-  - Real-time monitoring
-  - Rule management interface
-  - System status dashboard
-
-## System Requirements
-- Linux-based operating system
-- Python 3.8 or higher
-- Root/sudo privileges for firewall operations
-- Required system packages:
-  ```bash
-  sudo apt-get update
-  sudo apt-get install python3-tk tcpdump
-  ```
-
-## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/BaselFirewall.git
+   git clone https://github.com/yourusername/BaselFirewall.git
    cd BaselFirewall
    ```
 
-2. Create and activate a virtual environment (recommended):
+2. Create and activate virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate
+   source venv/bin/activate  # Linux/Mac
    ```
 
 3. Install dependencies:
@@ -76,144 +41,62 @@ A comprehensive network security solution with advanced firewall capabilities, i
    pip install -r requirements.txt
    ```
 
-4. Initialize the firewall:
+4. Run the firewall:
    ```bash
-   sudo python setup.py install
+   sudo python main.py
    ```
 
-## Usage
+## Documentation
 
-### Command Line Interface
-```bash
-# Start the CLI
-sudo python main.py
+- [Installation Guide](docs/INSTALL.md)
+- [User Guide](docs/user/installation.md)
+- [Security Features](docs/user/security_features.md)
+- [API Reference](docs/technical/api_reference.md)
+- [Contributing Guidelines](docs/CONTRIBUTING.md)
+- [FAQ](docs/FAQ.md)
 
-# Direct commands
-sudo python main.py --allow-ip 192.168.1.100
-sudo python main.py --block-port 8080
-sudo python main.py --enable-ids
+## Project Structure
+
 ```
-
-### Graphical Interface
-```bash
-# Start the GUI
-sudo python gui/interface.py
+BaselFirewall/
+├── cli/                 # Command-line interface
+├── config/             # Configuration files
+├── docs/               # Documentation
+├── firewall/           # Core firewall functionality
+├── gui/                # Graphical user interface
+├── logs/               # Log files
+├── resources/          # Project resources
+└── tests/              # Test suite
 ```
-
-### Common Operations
-1. **Managing Rules**
-   ```bash
-   # Allow an IP
-   sudo python main.py --allow-ip IP_ADDRESS
-
-   # Block a port
-   sudo python main.py --block-port PORT_NUMBER
-
-   # Remove a rule
-   sudo python main.py --remove-rule RULE_ID
-   ```
-
-2. **User Management**
-   ```bash
-   # Add a user
-   sudo python main.py --add-user USERNAME
-
-   # Change password
-   sudo python main.py --change-password USERNAME
-
-   # List users (admin only)
-   sudo python main.py --list-users
-   ```
-
-3. **System Control**
-   ```bash
-   # Enable features
-   sudo python main.py --enable-feature FEATURE_NAME
-
-   # View logs
-   sudo python main.py --view-logs
-
-   # Check status
-   sudo python main.py --status
-   ```
 
 ## Security Features
 
-### Rate Limiting
-- Maximum 5 failed login attempts within 5 minutes
-- IP-based blocking for excessive attempts
-- Automatic IDS notification for potential brute force
+- Rate limiting for connection attempts
+- SYN flood protection
+- ICMP flood protection
+- IP blacklisting
+- Port blocking
+- Stateful packet inspection
+- Real-time threat detection
+- Comprehensive logging and alerts
 
-### IDS/IPS Capabilities
-- SYN flood detection
-- Connection rate monitoring
-- Pattern-based attack detection
-- Automatic threat response
-- Configurable alert thresholds
+## Requirements
 
-### Logging and Monitoring
-- Detailed event logging
-- IP-based activity tracking
-- Rule match logging
-- System performance metrics
-- Security event alerts
-
-## Project Structure
-```
-BaselFirewall/
-├── main.py                 # Main entry point
-├── cli/                    # CLI implementation
-├── gui/                    # GUI implementation
-├── firewall/              # Core firewall modules
-│   ├── rules.py           # Rule management
-│   ├── ids_ips.py         # IDS/IPS implementation
-│   ├── auth.py            # Authentication
-│   └── logging.py         # Logging system
-├── config/                # Configuration files
-├── logs/                  # Log files
-├── tests/                 # Test suite
-└── resources/             # Additional resources
-```
-
-## Development
-
-### Running Tests
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=firewall tests/
-```
-
-### Code Style
-```bash
-# Format code
-black .
-
-# Check style
-flake8
-```
+- Python 3.8+
+- Linux system with iptables
+- Root privileges for firewall operations
+- Additional requirements in requirements.txt
 
 ## Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+
+Please read our [Contributing Guidelines](docs/CONTRIBUTING.md) before submitting pull requests.
 
 ## License
-This project is developed for academic purposes and is available for educational use under the MIT License.
 
-## Credits
-Developed by **B. Abu-Radaha**  
-Supervised by **M. Nabarawi**  
-Graduation Project – **Hittien College**, May 2025
-
-## Acknowledgments
-- Grateful to Al-Hareth for providing the hardware support and testing infrastructure
-- Special thanks to the Cybersecurity Lab at Hittien College
-- Thanks to all beta testers and contributors
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
-For issues and questions, please open an issue on the GitHub repository.
+
+- [Report Issues](https://github.com/yourusername/BaselFirewall/issues)
+- [FAQ](docs/FAQ.md)
+- [Security Policy](docs/SECURITY.md)

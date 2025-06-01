@@ -1,178 +1,135 @@
-# BaselFirewall Installation Guide
+# Installation Guide
 
-## System Requirements
+This guide provides detailed instructions for installing and configuring BaselFirewall on your Linux system.
 
-### Operating System
-- Linux (Debian/Ubuntu/Kali Linux recommended)
-- Kernel version 4.x or higher
-- Root/sudo access required
+## Prerequisites
 
-### Python Requirements
+### System Requirements
+- Linux distribution (Ubuntu 20.04+ or similar)
 - Python 3.8 or higher
-- pip package manager
-- venv module
+- Root/sudo privileges
+- 2GB RAM minimum
+- 500MB free disk space
 
-### Network Requirements
-- Network interface card(s)
-- Root access to modify iptables rules
-- Network configuration permissions
+### Required System Packages
+```bash
+# Update package list
+sudo apt-get update
+
+# Install required system packages
+sudo apt-get install -y \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    python3-tk \
+    iptables \
+    tcpdump \
+    net-tools
+```
 
 ## Installation Steps
 
-### 1. System Preparation
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/yourusername/BaselFirewall.git
+   cd BaselFirewall
+   ```
 
-```bash
-# Update system packages
-sudo apt update
-sudo apt upgrade -y
+2. **Create Virtual Environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-# Install required system packages
-sudo apt install -y python3-pip python3-venv iptables net-tools
-```
+3. **Install Python Dependencies**
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
 
-### 2. Clone Repository
+4. **Configure Firewall**
+   ```bash
+   # Create necessary directories
+   sudo mkdir -p /var/log/baselfirewall
+   sudo chmod 755 /var/log/baselfirewall
 
-```bash
-# Clone the repository
-git clone https://github.com/your-username/BaselFirewall.git
-cd BaselFirewall
-```
+   # Initialize configuration
+   sudo python setup.py install
+   ```
 
-### 3. Virtual Environment Setup
+## Post-Installation Setup
 
-```bash
-# Create virtual environment
-python3 -m venv venv
+1. **Create Admin User**
+   ```bash
+   sudo python register_user.py
+   ```
+   Follow the prompts to create an admin account.
 
-# Activate virtual environment
-source venv/bin/activate
+2. **Verify Installation**
+   ```bash
+   sudo python main.py --status
+   ```
+   You should see "BaselFirewall is running" if everything is configured correctly.
 
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 4. Configuration Setup
-
-```bash
-# Create configuration directory if it doesn't exist
-mkdir -p config
-
-# Initialize configuration files
-cp resources/example_configs/firewall_config.json config/
-cp resources/example_configs/users.json config/
-```
-
-### 5. Permissions Setup
-
-```bash
-# Ensure proper permissions for log directory
-sudo mkdir -p /var/log/baselfirewall
-sudo chown -R $USER:$USER /var/log/baselfirewall
-
-# Set proper permissions for configuration files
-chmod 600 config/*.json
-```
-
-### 6. First Run and Initial Setup
-
-```bash
-# Run the firewall setup script
-sudo python3 main.py
-```
-
-## Post-Installation Steps
-
-### 1. Create Admin User
-```bash
-sudo python3 register_user.py
-# Follow prompts to create admin account
-```
-
-### 2. Configure Network Interfaces
-1. Open `config/firewall_config.json`
-2. Set appropriate values for:
-   - `external_interface`
-   - `internal_interface`
-   - `internal_network`
-
-### 3. Test Installation
-```bash
-# Run test suite
-sudo python3 -m pytest tests/
-```
+3. **Configure Autostart (Optional)**
+   To start BaselFirewall automatically at boot:
+   ```bash
+   sudo cp resources/baselfirewall.service /etc/systemd/system/
+   sudo systemctl enable baselfirewall
+   sudo systemctl start baselfirewall
+   ```
 
 ## Common Issues and Solutions
 
-### 1. Permission Errors
+### Permission Errors
+If you encounter permission errors:
 ```bash
-# Fix log directory permissions
 sudo chown -R $USER:$USER /var/log/baselfirewall
 sudo chmod 755 /var/log/baselfirewall
 ```
 
-### 2. Module Import Errors
+### Python Version Conflicts
+If you have multiple Python versions:
 ```bash
-# Ensure you're in virtual environment
-source venv/bin/activate
+# Verify Python version
+python3 --version
 
-# Reinstall requirements
-pip install -r requirements.txt
+# If needed, install specific version
+sudo apt-get install python3.8
 ```
 
-### 3. Iptables Issues
+### Dependency Issues
+If you encounter dependency conflicts:
 ```bash
-# Reset iptables to default
-sudo iptables -F
-sudo iptables -X
-sudo iptables -P INPUT ACCEPT
-sudo iptables -P FORWARD ACCEPT
-sudo iptables -P OUTPUT ACCEPT
+pip install --upgrade -r requirements.txt --no-cache-dir
 ```
 
 ## Uninstallation
 
+To completely remove BaselFirewall:
 ```bash
-# Disable firewall first
-sudo python3 main.py
-# Select option 3 to disable firewall
+# Stop the service
+sudo systemctl stop baselfirewall
+sudo systemctl disable baselfirewall
 
-# Remove configuration and logs
+# Remove files
 sudo rm -rf /var/log/baselfirewall
-rm -rf config/
+sudo rm /etc/systemd/system/baselfirewall.service
 
-# Remove virtual environment
-deactivate
-rm -rf venv/
+# Remove Python package
+pip uninstall baselfirewall -y
 ```
 
-## Upgrading
+## Next Steps
 
-```bash
-# Backup configuration
-cp -r config/ config_backup/
+- Read the [User Guide](user/installation.md) for usage instructions
+- Configure [Security Features](user/security_features.md)
+- Review [FAQ](FAQ.md) for common questions
+- Check [Troubleshooting Guide](TROUBLESHOOTING.md) for detailed problem-solving
 
-# Pull latest changes
-git pull origin main
+## Support
 
-# Update dependencies
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Restore configuration if needed
-cp -r config_backup/* config/
-```
-
-## Security Notes
-
-1. Always run the firewall with sudo/root privileges
-2. Keep configuration files secure (600 permissions)
-3. Regularly update the system and dependencies
-4. Monitor logs for suspicious activity
-5. Backup configuration before upgrades
-
-## Additional Resources
-
-- [API Documentation](API.md)
-- [Security Guidelines](SECURITY.md)
-- [Troubleshooting Guide](FAQ.md)
-- [Performance Tuning](PERFORMANCE.md) 
+If you encounter any issues during installation:
+1. Check the [FAQ](FAQ.md)
+2. Search existing [GitHub Issues](https://github.com/yourusername/BaselFirewall/issues)
+3. Create a new issue with detailed information about your problem 

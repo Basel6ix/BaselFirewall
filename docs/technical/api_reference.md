@@ -1,370 +1,296 @@
 # API Reference
 
-## Overview
-BaselFirewall provides both a Python API and a REST API for programmatic control and integration. This document details all available APIs, their usage, and examples.
+This document provides detailed information about BaselFirewall's API endpoints and usage.
 
-## Python API
+## Core Modules
 
-### Core Module
-
-#### Firewall
-```python
-from baselfirewall import Firewall
-
-# Initialize firewall
-fw = Firewall()
-
-# Start firewall
-fw.start()
-
-# Stop firewall
-fw.stop()
-
-# Reload configuration
-fw.reload()
-
-# Get status
-status = fw.status()
-```
+### 1. Firewall Management
 
 #### Rule Management
-```python
-from baselfirewall import Rule, RuleManager
 
-# Create rule
-rule = Rule(
-    action="ACCEPT",
-    source="192.168.1.0/24",
-    destination="any",
-    protocol="tcp",
-    port=80
+```python
+from firewall.rules import RuleManager
+
+# Initialize rule manager
+rule_manager = RuleManager()
+
+# Add IP-based rule
+rule_manager.add_ip_rule(ip="192.168.1.100", action="allow")
+
+# Add port-based rule
+rule_manager.add_port_rule(port=80, action="block")
+
+# Remove rule
+rule_manager.remove_rule(rule_id="rule_123")
+```
+
+Available Methods:
+- `add_ip_rule(ip: str, action: str) -> str`
+- `add_port_rule(port: int, action: str) -> str`
+- `remove_rule(rule_id: str) -> bool`
+- `get_rules() -> List[Dict]`
+- `clear_rules() -> bool`
+
+### 2. IDS/IPS System
+
+```python
+from firewall.ids_ips import IDSManager
+
+# Initialize IDS manager
+ids_manager = IDSManager()
+
+# Enable IDS
+ids_manager.enable()
+
+# Add custom rule
+ids_manager.add_rule(
+    pattern="HTTP_ATTACK",
+    content="../",
+    port=80,
+    action="block"
 )
 
-# Add rule
-manager = RuleManager()
-manager.add_rule(rule)
-
-# List rules
-rules = manager.list_rules()
-
-# Delete rule
-manager.delete_rule(rule.id)
+# Get alerts
+alerts = ids_manager.get_alerts()
 ```
 
-#### Security Module
+Available Methods:
+- `enable() -> bool`
+- `disable() -> bool`
+- `add_rule(pattern: str, content: str, port: int, action: str) -> str`
+- `remove_rule(rule_id: str) -> bool`
+- `get_alerts() -> List[Dict]`
+- `set_sensitivity(level: str) -> bool`
+
+### 3. DoS Protection
+
 ```python
-from baselfirewall import Security
+from firewall.dos import DosProtection
 
-# Initialize security
-sec = Security()
+# Initialize DoS protection
+dos_protection = DosProtection()
 
-# Configure IDS
-sec.ids.enable()
-sec.ids.set_sensitivity("high")
+# Enable protection
+dos_protection.enable()
 
-# Configure DoS protection
-sec.dos.enable()
-sec.dos.set_rate_limit(100)
-
-# Configure NAT
-sec.nat.add_forward(80, "192.168.1.100", 8080)
-```
-
-### User Management
-
-#### Authentication
-```python
-from baselfirewall import Auth
-
-# Initialize auth
-auth = Auth()
-
-# Create user
-auth.create_user("username", "password", role="admin")
-
-# Verify credentials
-if auth.verify("username", "password"):
-    print("Authentication successful")
-
-# Delete user
-auth.delete_user("username")
-```
-
-#### Role Management
-```python
-from baselfirewall import RoleManager
-
-# Initialize manager
-roles = RoleManager()
-
-# Create role
-roles.create("custom_role")
-
-# Add permissions
-roles.add_permission("custom_role", "security.view")
-
-# Assign role
-roles.assign_user("username", "custom_role")
-```
-
-### Logging
-
-#### Log Management
-```python
-from baselfirewall import Logger
-
-# Initialize logger
-log = Logger()
-
-# Write log
-log.info("System started")
-log.error("Connection failed")
-
-# Query logs
-entries = log.query(
-    start_time="2024-01-01",
-    end_time="2024-01-02",
-    level="ERROR"
+# Set rate limits
+dos_protection.set_rate_limit(
+    connections_per_second=100,
+    burst=200
 )
 
-# Export logs
-log.export("output.log")
+# Add to blacklist
+dos_protection.add_to_blacklist("10.0.0.5")
 ```
 
-## REST API
+Available Methods:
+- `enable() -> bool`
+- `disable() -> bool`
+- `set_rate_limit(connections_per_second: int, burst: int) -> bool`
+- `add_to_blacklist(ip: str) -> bool`
+- `remove_from_blacklist(ip: str) -> bool`
+- `get_blacklist() -> List[str]`
 
-### Authentication
+### 4. NAT Configuration
 
-#### Login
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
+```python
+from firewall.nat import NATManager
 
-{
-    "username": "admin",
-    "password": "password123"
-}
+# Initialize NAT manager
+nat_manager = NATManager()
 
-Response:
-{
-    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-    "expires_in": 3600
-}
+# Enable NAT
+nat_manager.enable()
+
+# Add port forwarding
+nat_manager.add_port_forward(
+    external_port=80,
+    internal_ip="192.168.1.100",
+    internal_port=8080
+)
 ```
 
-#### Logout
-```http
-POST /api/v1/auth/logout
-Authorization: Bearer <token>
+Available Methods:
+- `enable() -> bool`
+- `disable() -> bool`
+- `add_port_forward(external_port: int, internal_ip: str, internal_port: int) -> bool`
+- `remove_port_forward(external_port: int) -> bool`
+- `get_port_forwards() -> List[Dict]`
 
-Response:
-{
-    "message": "Logged out successfully"
-}
+### 5. Authentication
+
+```python
+from firewall.auth import AuthManager
+
+# Initialize auth manager
+auth_manager = AuthManager()
+
+# Register new user
+auth_manager.register_user(
+    username="admin",
+    password="secure_password",
+    role="admin"
+)
+
+# Authenticate user
+token = auth_manager.authenticate(
+    username="admin",
+    password="secure_password"
+)
+
+# Verify token
+is_valid = auth_manager.verify_token(token)
 ```
 
-### Firewall Rules
+Available Methods:
+- `register_user(username: str, password: str, role: str) -> bool`
+- `authenticate(username: str, password: str) -> str`
+- `verify_token(token: str) -> bool`
+- `change_password(username: str, old_password: str, new_password: str) -> bool`
+- `delete_user(username: str) -> bool`
 
-#### List Rules
-```http
-GET /api/v1/rules
-Authorization: Bearer <token>
+### 6. Logging System
 
-Response:
-{
-    "rules": [
-        {
-            "id": 1,
-            "action": "ACCEPT",
-            "source": "192.168.1.0/24",
-            "destination": "any",
-            "protocol": "tcp",
-            "port": 80
-        }
-    ]
-}
+```python
+from firewall.logging import LogManager
+
+# Initialize log manager
+log_manager = LogManager()
+
+# Log security event
+log_manager.log_security_event(
+    event_type="INTRUSION_ATTEMPT",
+    source_ip="10.0.0.5",
+    details="SSH brute force attempt"
+)
+
+# Get security logs
+logs = log_manager.get_security_logs(
+    start_time="2024-01-01T00:00:00Z",
+    end_time="2024-01-02T00:00:00Z"
+)
 ```
 
-#### Add Rule
-```http
-POST /api/v1/rules
-Authorization: Bearer <token>
-Content-Type: application/json
+Available Methods:
+- `log_security_event(event_type: str, source_ip: str, details: str) -> bool`
+- `log_system_event(event_type: str, details: str) -> bool`
+- `get_security_logs(start_time: str, end_time: str) -> List[Dict]`
+- `get_system_logs(start_time: str, end_time: str) -> List[Dict]`
+- `clear_logs() -> bool`
 
-{
-    "action": "ACCEPT",
-    "source": "192.168.1.0/24",
-    "destination": "any",
-    "protocol": "tcp",
-    "port": 80
-}
+## CLI Interface
 
-Response:
-{
-    "id": 1,
-    "message": "Rule added successfully"
-}
+The command-line interface provides access to all API functionality:
+
+```bash
+# Rule management
+sudo python main.py --add-rule ip=192.168.1.100 action=allow
+sudo python main.py --remove-rule rule_123
+
+# IDS management
+sudo python main.py --enable-ids
+sudo python main.py --add-ids-rule pattern=HTTP_ATTACK
+
+# DoS protection
+sudo python main.py --enable-dos
+sudo python main.py --set-rate-limit 100
+
+# NAT configuration
+sudo python main.py --enable-nat
+sudo python main.py --add-port-forward 80:192.168.1.100:8080
+
+# User management
+sudo python main.py --add-user admin
+sudo python main.py --change-password admin
+
+# Log management
+sudo python main.py --view-logs
+sudo python main.py --export-logs output.txt
 ```
 
-#### Delete Rule
-```http
-DELETE /api/v1/rules/{rule_id}
-Authorization: Bearer <token>
+## GUI Interface
 
-Response:
-{
-    "message": "Rule deleted successfully"
-}
-```
+The GUI provides access to all API functionality through a user-friendly interface:
 
-### Security Features
+1. **Rule Management Tab**
+   - Add/remove IP rules
+   - Add/remove port rules
+   - View active rules
 
-#### IDS Configuration
-```http
-PUT /api/v1/security/ids
-Authorization: Bearer <token>
-Content-Type: application/json
+2. **Security Tab**
+   - Enable/disable IDS
+   - Configure DoS protection
+   - Manage blacklist
 
-{
-    "enabled": true,
-    "sensitivity": "high"
-}
+3. **NAT Tab**
+   - Enable/disable NAT
+   - Configure port forwarding
+   - Set up DMZ
 
-Response:
-{
-    "message": "IDS configured successfully"
-}
-```
+4. **Users Tab**
+   - Manage users
+   - Change passwords
+   - View user activity
 
-#### DoS Protection
-```http
-PUT /api/v1/security/dos
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-    "enabled": true,
-    "rate_limit": 100,
-    "connection_limit": 1000
-}
-
-Response:
-{
-    "message": "DoS protection configured successfully"
-}
-```
-
-### User Management
-
-#### Create User
-```http
-POST /api/v1/users
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-    "username": "newuser",
-    "password": "password123",
-    "role": "standard"
-}
-
-Response:
-{
-    "id": 1,
-    "message": "User created successfully"
-}
-```
-
-#### Update User
-```http
-PUT /api/v1/users/{user_id}
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-    "role": "admin",
-    "email": "user@example.com"
-}
-
-Response:
-{
-    "message": "User updated successfully"
-}
-```
-
-### System Management
-
-#### System Status
-```http
-GET /api/v1/system/status
-Authorization: Bearer <token>
-
-Response:
-{
-    "status": "running",
-    "uptime": 3600,
-    "version": "1.0.0",
-    "connections": 100
-}
-```
-
-#### Configuration
-```http
-GET /api/v1/system/config
-Authorization: Bearer <token>
-
-Response:
-{
-    "config": {
-        "log_level": "INFO",
-        "max_connections": 1000,
-        "session_timeout": 3600
-    }
-}
-```
+5. **Logs Tab**
+   - View security logs
+   - View system logs
+   - Export logs
 
 ## Error Handling
 
-### Error Codes
+All API methods return appropriate error codes and messages:
+
 ```python
-ERROR_CODES = {
-    400: "Bad Request",
-    401: "Unauthorized",
-    403: "Forbidden",
-    404: "Not Found",
-    500: "Internal Server Error"
-}
+from firewall.exceptions import (
+    FirewallError,
+    AuthenticationError,
+    ConfigurationError
+)
+
+try:
+    rule_manager.add_ip_rule(ip="invalid_ip", action="allow")
+except FirewallError as e:
+    print(f"Firewall error: {e}")
+except AuthenticationError as e:
+    print(f"Authentication error: {e}")
+except ConfigurationError as e:
+    print(f"Configuration error: {e}")
 ```
 
-### Error Response
-```json
-{
-    "error": {
-        "code": 400,
-        "message": "Invalid request parameters",
-        "details": {
-            "field": "port",
-            "reason": "Must be between 1 and 65535"
-        }
-    }
-}
-```
+Common error codes:
+- 1000: Invalid configuration
+- 2000: Authentication failure
+- 3000: Permission denied
+- 4000: Resource not found
+- 5000: Internal error
 
-## Rate Limiting
+## Best Practices
 
-### Limits
-- Authentication: 5 requests per minute
-- API calls: 100 requests per minute
-- System operations: 20 requests per minute
+1. **Error Handling**
+   - Always wrap API calls in try-except blocks
+   - Log errors appropriately
+   - Provide user-friendly error messages
 
-### Headers
-```http
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1577836800
-```
+2. **Authentication**
+   - Always verify user permissions
+   - Use secure password storage
+   - Implement token expiration
 
-## Versioning
-- Current version: v1
-- Version format: v{major}
-- Version header: X-API-Version 
+3. **Performance**
+   - Cache frequently used data
+   - Use batch operations when possible
+   - Monitor resource usage
+
+4. **Security**
+   - Validate all input
+   - Use HTTPS for remote access
+   - Implement rate limiting
+
+## Support
+
+For API support:
+- Check the [FAQ](../FAQ.md)
+- Review [Troubleshooting Guide](../TROUBLESHOOTING.md)
+- Submit issues on GitHub
+- Contact the development team 
