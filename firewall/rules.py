@@ -192,6 +192,9 @@ def reset_firewall():
         
         # Disable advanced features
         disable_stateful_inspection_rules()
+        disable_dos_protection()
+        disable_ids_ips()
+        disable_nat()
         
         # Flush all rules and user-defined chains
         run_command("iptables -F")
@@ -200,28 +203,14 @@ def reset_firewall():
         # Set default policies
         set_default_policy()
         
-        # Apply essential rules first
-        apply_essential_rules()
+        # Reapply saved rules
+        apply_firewall_rules()
         
-        # Reapply saved rules from config
-        for ip in config.get("allowed_ips", []):
-            run_command(f"iptables -A INPUT -s {ip} -j ACCEPT")
-            log_event(f"Restored allowed IP: {ip}", "INFO")
-        
-        for ip in config.get("blocked_ips", []):
-            run_command(f"iptables -A INPUT -s {ip} -j DROP")
-            log_event(f"Restored blocked IP: {ip}", "INFO")
-        
-        for port in config.get("blocked_ports", []):
-            if is_valid_port(port):
-                run_command(f"iptables -A INPUT -p tcp --dport {port} -j DROP")
-                run_command(f"iptables -A INPUT -p udp --dport {port} -j DROP")
-                log_event(f"Restored blocked port: {port}", "INFO")
-        
-        log_event("Firewall rules reset and restored", "CRITICAL")
+        log_event("Firewall reset successfully", "INFO")
         return True
+        
     except Exception as e:
-        log_event(f"Failed to reset firewall: {str(e)}", "ERROR")
+        log_event(f"Error resetting firewall: {str(e)}", "ERROR")
         return False
 
 def enable_stateful_inspection():

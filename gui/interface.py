@@ -34,6 +34,9 @@ class BaselFirewallGUI(tk.Tk):
 
         self.username = None
         self.admin = False
+        
+        # Add auto-refresh for alerts
+        self.after(1000, self.auto_refresh_alerts)
 
         self.login()
 
@@ -415,6 +418,12 @@ class BaselFirewallGUI(tk.Tk):
                 add_alert(f"User '{self.username}' exited BaselFirewall GUI", "INFO")
                 log_event(f"User '{self.username}' exited BaselFirewall GUI", "INFO")
             self.destroy()
+
+    def auto_refresh_alerts(self):
+        """Auto refresh alerts every second"""
+        if hasattr(self, 'alerts_text'):
+            self.refresh_alerts()
+        self.after(1000, self.auto_refresh_alerts)
 
 
 if __name__ == "__main__":

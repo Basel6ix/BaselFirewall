@@ -126,10 +126,14 @@ def _run_ips():
             text=True
         )
         
+        print("[*] Packet capture started...")
         while not _stop_event.is_set():
             line = process.stdout.readline()
             if not line:
                 break
+
+            # Debug: Print captured packet
+            print(f"[DEBUG] Captured packet: {line.strip()}")
 
             # Parse IP addresses
             ip_match = re.search(r'IP (\d+\.\d+\.\d+\.\d+)[. ].*?> (\d+\.\d+\.\d+\.\d+)', line)
@@ -137,8 +141,13 @@ def _run_ips():
                 src_ip = ip_match.group(1)
                 dst_ip = ip_match.group(2)
                 
+                # Debug: Print matched IPs
+                print(f"[DEBUG] Matched IPs - Source: {src_ip}, Destination: {dst_ip}")
+                
                 # Analyze packet
-                _packet_inspector.inspect_packet(line, src_ip)
+                result = _packet_inspector.inspect_packet(line, src_ip)
+                if result:
+                    print(f"[DEBUG] Alert generated: {result}")
 
         process.terminate()
     except Exception as e:
@@ -149,8 +158,13 @@ def _run_ips():
 
 def enable_ids_ips():
     """Enable IDS/IPS functionality"""
+    global _ids_thread
     try:
-        print("[*] IPS scanning started on interface eth0...")
+        if _ids_thread is None or not _ids_thread.is_alive():
+            _stop_event.clear()
+            _ids_thread = Thread(target=_run_ips, daemon=True)
+            _ids_thread.start()
+            
         set_feature_state("ids_ips_enabled", True)
         log_event("IDS/IPS enabled", "INFO")
         print("[*] IDS/IPS enabled successfully.")
@@ -161,7 +175,16 @@ def enable_ids_ips():
 
 def disable_ids_ips():
     """Disable IDS/IPS functionality"""
+    global _ids_thread
     try:
+        # Signal the thread to stop
+        _stop_event.set()
+        
+        # Wait for the thread to finish if it's running
+        if _ids_thread and _ids_thread.is_alive():
+            _ids_thread.join(timeout=2)  # Wait up to 2 seconds
+            
+        _ids_thread = None
         set_feature_state("ids_ips_enabled", False)
         log_event("IDS/IPS disabled", "WARNING")
         print("[*] IDS/IPS disabled.")
@@ -172,4 +195,4 @@ def disable_ids_ips():
 
 def record_failed_login(ip):
     """Record a failed login attempt for IDS analysis"""
-    return _packet_inspector.record_failed_auth(ip)
+    return _packet_inspector.record_failed_auth(ip) 

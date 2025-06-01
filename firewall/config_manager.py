@@ -94,7 +94,6 @@ def reset_config():
         log_event(f"Error resetting config: {str(e)}", "ERROR")
         return False
 
-# NAT Configuration functions
 def set_nat_config(external_interface, internal_interface, internal_network):
     """
     Set NAT configuration parameters.
@@ -140,6 +139,8 @@ def add_blocked_ip(ip):
     if ip not in config["blocked_ips"]:
         config["blocked_ips"].append(ip)
         save_config(config)
+        return True
+    return False
 
 def add_blocked_port(port):
     config = load_config()
@@ -157,4 +158,4 @@ def set_feature_state(feature_name, enabled):
 
 def get_feature_state(feature_name):
     config = load_config()
-    return config.get(feature_name, False)
+    return config.get(feature_name, False) 

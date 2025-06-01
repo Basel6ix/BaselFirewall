@@ -1,8 +1,14 @@
 {
-    "allowed_ips": [],
-    "blocked_ports": [],
-    "blocked_ips": [],
-    "firewall_enabled": false,
+    "allowed_ips": [
+        "192.168.1.100"
+    ],
+    "blocked_ports": [
+        80
+    ],
+    "blocked_ips": [
+        "192.168.1.43"
+    ],
+    "firewall_enabled": true,
     "dos_protection_enabled": false,
     "ids_ips_enabled": false,
     "nat_enabled": false,
