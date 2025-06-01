@@ -1,1 +1,23 @@
-{"allowed_ips":[],"blocked_ports":[],"blocked_ips":[],"firewall_enabled":false,"dos_protection_enabled":false,"ids_ips_enabled":false,"nat_enabled":false,"stateful_enabled":false,"nat_config":{"external_interface":null,"internal_interface":null,"internal_network":null},"ids_config":{"dos_threshold":50,"dos_window":10,"syn_flood_threshold":30,"syn_flood_window":5,"failed_auth_threshold":5,"failed_auth_window":60}}
+{
+    "allowed_ips": [],
+    "blocked_ports": [],
+    "blocked_ips": [],
+    "firewall_enabled": false,
+    "dos_protection_enabled": false,
+    "ids_ips_enabled": false,
+    "nat_enabled": false,
+    "stateful_enabled": false,
+    "nat_config": {
+        "external_interface": null,
+        "internal_interface": null,
+        "internal_network": null
+    },
+    "ids_config": {
+        "dos_threshold": 50,
+        "dos_window": 10,
+        "syn_flood_threshold": 30,
+        "syn_flood_window": 5,
+        "failed_auth_threshold": 5,
+        "failed_auth_window": 60
+    }
+}
