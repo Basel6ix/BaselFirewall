@@ -6,7 +6,7 @@
 If you discover a security vulnerability in BaselFirewall, please follow these steps:
 
 1. **DO NOT** disclose the issue publicly
-2. Send a detailed report to security@baselfirewall.org
+2. Send a detailed report to baselyt24@gmail.com
 3. Include steps to reproduce the vulnerability
 4. Wait for our response before any disclosure
 
