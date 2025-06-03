@@ -20,16 +20,7 @@
 ### Our Pledge
 We pledge to make participation in our project a harassment-free experience for everyone, regardless of:
 - Age
-- Body size
-- Disability
-- Ethnicity
-- Gender identity
 - Experience level
-- Nationality
-- Personal appearance
-- Race
-- Religion
-- Sexual identity/orientation
 
 ### Our Standards
 - Use welcoming and inclusive language
