@@ -26,22 +26,53 @@ def run_command(command):
         return False
 
 def set_default_policy():
+    # Set restrictive default policies
     run_command("iptables -P INPUT DROP")
     run_command("iptables -P FORWARD DROP")
-    run_command("iptables -P OUTPUT ACCEPT")
-    log_event("Default firewall policy set", "INFO")
+    run_command("iptables -P OUTPUT DROP")
+    log_event("Restrictive default firewall policies set", "INFO")
 
 def apply_essential_rules():
     # Allow established connections
     run_command("iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")
+    run_command("iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")
+    run_command("iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT")
+    
     # Allow loopback
     run_command("iptables -A INPUT -i lo -j ACCEPT")
-    # Allow ICMP (ping)
-    run_command("iptables -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT")
-    run_command("iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT")
-    # Allow DNS responses
+    run_command("iptables -A OUTPUT -o lo -j ACCEPT")
+    
+    # Allow ICMP (ping) with rate limiting
+    run_command("iptables -A INPUT -p icmp --icmp-type echo-reply -m limit --limit 1/s --limit-burst 4 -j ACCEPT")
+    run_command("iptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 1/s --limit-burst 4 -j ACCEPT")
+    run_command("iptables -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT")
+    run_command("iptables -A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT")
+    
+    # Allow DNS
     run_command("iptables -A INPUT -p udp --sport 53 -j ACCEPT")
-    log_event("Essential rules applied", "INFO")
+    run_command("iptables -A OUTPUT -p udp --dport 53 -j ACCEPT")
+    run_command("iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT")
+    
+    # Allow DHCP
+    run_command("iptables -A INPUT -p udp --sport 67:68 --dport 67:68 -j ACCEPT")
+    run_command("iptables -A OUTPUT -p udp --sport 67:68 --dport 67:68 -j ACCEPT")
+    
+    # Allow SSH (with rate limiting)
+    run_command("iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --set")
+    run_command("iptables -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 -j DROP")
+    run_command("iptables -A INPUT -p tcp --dport 22 -j ACCEPT")
+    run_command("iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT")
+    
+    # Allow HTTP/HTTPS
+    run_command("iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT")
+    run_command("iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT")
+    
+    # Log dropped packets
+    run_command("iptables -A INPUT -j LOG --log-prefix 'DROPPED_INPUT: ' --log-level 6")
+    run_command("iptables -A FORWARD -j LOG --log-prefix 'DROPPED_FORWARD: ' --log-level 6")
+    run_command("iptables -A OUTPUT -j LOG --log-prefix 'DROPPED_OUTPUT: ' --log-level 6")
+    
+    log_event("Enhanced essential rules applied", "INFO")
 
 def apply_firewall_rules():
     # Clear existing rules

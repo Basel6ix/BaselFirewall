@@ -9,14 +9,24 @@ DEFAULT_CONFIG = {
     "blocked_ips": [],
     "blocked_ports": [],
     "firewall_enabled": True,
-    "dos_protection_enabled": False,
-    "ids_ips_enabled": False,
-    "nat_enabled": False,
-    "stateful_enabled": False,
+    "dos_protection_enabled": True,
+    "ids_ips_enabled": True,
+    "nat_enabled": True,
+    "stateful_enabled": True,
     "nat_config": {
-        "external_interface": "",
-        "internal_interface": "",
-        "internal_network": ""
+        "external_interface": "eth0",
+        "internal_interface": "eth1",
+        "internal_network": "192.168.1.0/24"
+    },
+    "dos_config": {
+        "rate_limit": 100,
+        "burst": 200,
+        "connection_limit": 50
+    },
+    "ids_config": {
+        "sensitivity": "high",
+        "block_attacks": True,
+        "log_attacks": True
     }
 }
 

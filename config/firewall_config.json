@@ -10,7 +10,7 @@
     ],
     "firewall_enabled": true,
     "dos_protection_enabled": false,
-    "ids_ips_enabled": false,
+    "ids_ips_enabled": true,
     "nat_enabled": false,
     "stateful_enabled": false,
     "nat_config": {
