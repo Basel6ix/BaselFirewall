@@ -1,4 +1,13 @@
-# Configuration Files
+# BaselFirewall Configuration Files Guide
+
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
+
+## Table of Contents
 
 ## Overview
 BaselFirewall uses a set of configuration files to manage its settings and behavior. This document details the structure and usage of these configuration files.
@@ -166,128 +175,3 @@ users:
     email: security@example.com
     enabled: true
 ```
-
-### Role Definitions (users/roles.yaml)
-```yaml
-# Role Definitions
-roles:
-  administrator:
-    permissions:
-      - "*"
-    
-  security_officer:
-    permissions:
-      - security.view
-      - security.edit
-      - logs.view
-      
-  network_manager:
-    permissions:
-      - network.view
-      - network.edit
-      - logs.view
-```
-
-### Logging Configuration (logs/logging.yaml)
-```yaml
-# Logging Settings
-logging:
-  version: 1
-  
-  # Handlers
-  handlers:
-    file:
-      class: logging.handlers.RotatingFileHandler
-      filename: /var/log/baselfirewall/system.log
-      maxBytes: 10485760
-      backupCount: 5
-      formatter: standard
-      
-    syslog:
-      class: logging.handlers.SysLogHandler
-      address: /dev/log
-      facility: local0
-      formatter: standard
-      
-  # Formatters
-  formatters:
-    standard:
-      format: "%(asctime)s [%(levelname)s] %(message)s"
-      datefmt: "%Y-%m-%d %H:%M:%S"
-      
-  # Loggers
-  loggers:
-    baselfirewall:
-      level: INFO
-      handlers: [file, syslog]
-      propagate: false
-```
-
-## Configuration Management
-
-### File Permissions
-```bash
-# Directory permissions
-drwxr-x--- root baselfirewall /etc/baselfirewall/
-drwxr-x--- root baselfirewall /etc/baselfirewall/rules/
-drwxr-x--- root baselfirewall /etc/baselfirewall/security/
-drwxr-x--- root baselfirewall /etc/baselfirewall/users/
-drwxr-x--- root baselfirewall /etc/baselfirewall/logs/
-
-# File permissions
--rw-r----- root baselfirewall /etc/baselfirewall/config.yaml
--rw-r----- root baselfirewall /etc/baselfirewall/rules/*.yaml
--rw-r----- root baselfirewall /etc/baselfirewall/security/*.yaml
--rw-r----- root baselfirewall /etc/baselfirewall/users/*.yaml
--rw-r----- root baselfirewall /etc/baselfirewall/logs/*.yaml
-```
-
-### Backup and Restore
-```bash
-# Backup configuration
-sudo baselfirewall-cli config backup
-
-# Restore configuration
-sudo baselfirewall-cli config restore backup.tar.gz
-
-# Export configuration
-sudo baselfirewall-cli config export config.yaml
-
-# Import configuration
-sudo baselfirewall-cli config import config.yaml
-```
-
-### Version Control
-```bash
-# Show config version
-sudo baselfirewall-cli config version
-
-# List changes
-sudo baselfirewall-cli config history
-
-# Rollback changes
-sudo baselfirewall-cli config rollback
-```
-
-## Best Practices
-
-### Security
-1. Regular backups
-2. Version control
-3. Access control
-4. Encryption
-5. Validation
-
-### Maintenance
-1. Regular updates
-2. Clean unused rules
-3. Document changes
-4. Test changes
-5. Monitor logs
-
-### Performance
-1. Optimize rules
-2. Clean old logs
-3. Regular cleanup
-4. Monitor size
-5. Archive data 

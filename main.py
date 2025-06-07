@@ -1,4 +1,5 @@
 import sys
+import argparse
 from firewall.rules import disable_firewall, enable_firewall
 from firewall.config_manager import load_config
 
@@ -23,7 +24,28 @@ def toggle_firewall():
         else:
             print("Failed to enable firewall. Check logs for details.")
 
+def run_daemon():
+    # Enable firewall by default in daemon mode
+    if not load_config().get("firewall_enabled", True):
+        enable_firewall()
+    
+    # Keep the process running
+    while True:
+        try:
+            import time
+            time.sleep(60)  # Check every minute
+        except KeyboardInterrupt:
+            break
+
 def main():
+    parser = argparse.ArgumentParser(description='BaselFirewall')
+    parser.add_argument('--daemon', action='store_true', help='Run in daemon mode')
+    args = parser.parse_args()
+
+    if args.daemon:
+        run_daemon()
+        return
+
     while True:
         config = load_config()
         firewall_status = "ENABLED" if config.get("firewall_enabled", True) else "DISABLED"

@@ -25,5 +25,10 @@
         "syn_flood_window": 5,
         "failed_auth_threshold": 5,
         "failed_auth_window": 60
+    },
+    "dos_config": {
+        "rate_limit": 100,
+        "burst": 200,
+        "connection_limit": 50
     }
 }

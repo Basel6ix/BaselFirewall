@@ -30,33 +30,46 @@ ENV/
 .vscode/
 *.swp
 *.swo
-.DS_Store
 
-# Logs and databases
+# Logs
 *.log
-*.sqlite
-*.db
+logs/
+/var/log/baselfirewall/
 
-# Local configuration
-.env
-.env.local
-config.local.ini
+# System
+.DS_Store
+Thumbs.db
+
+# Firewall specific
+*.pid
+*.lock
+config/local_settings.json
+*.db
+*.sqlite3
 
 # Test coverage
 .coverage
 htmlcov/
 .tox/
-.pytest_cache/
+.nox/
+.coverage.*
+coverage.xml
+*.cover
 
-# Build and documentation
+# Documentation
 docs/_build/
 site/
 
-# Backup files
+# Temporary files
+*.tmp
 *.bak
-*.backup
+*.swp
 *~
 
-# System Files
-.DS_Store
-Thumbs.db 
+# Security
+*.pem
+*.key
+*.crt
+*.csr
+*.srl
+.env 

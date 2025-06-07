@@ -1,9 +1,11 @@
-# Contributing to BaselFirewall
+# BaselFirewall Contributing Guide
 
-## Project Information
-**Author:** Basel Abu-Radaha (B. Abu-Radaha)  
-**Supervisor:** Mohammad Nabrawi (M. Nabrawi)  
-**Contact:** baselyt24@gmail.com
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
 
 ## Table of Contents
 1. [Code of Conduct](#code-of-conduct)
@@ -17,17 +19,7 @@
 
 ## Code of Conduct
 
-### Our Pledge
-We pledge to make participation in our project a harassment-free experience for everyone, regardless of:
-- Age
-- Experience level
-
-### Our Standards
-- Use welcoming and inclusive language
-- Be respectful of differing viewpoints
-- Accept constructive criticism
-- Focus on what is best for the community
-- Show empathy towards other community members
+By participating in this project, you agree to maintain a respectful and inclusive environment for everyone.
 
 ## Getting Started
 
@@ -278,3 +270,173 @@ python -m pytest --cov=firewall tests/
 - Include reproduction steps
 - Wait for fixes
 - Follow disclosure policy 
+
+## How to Contribute
+
+### 1. Reporting Bugs
+
+- Use the GitHub issue tracker
+- Include detailed steps to reproduce
+- Provide system information
+- Include relevant logs
+- Describe expected behavior
+
+### 2. Suggesting Features
+
+- Check existing issues first
+- Provide clear description
+- Explain use case
+- Include implementation ideas if possible
+
+### 3. Pull Requests
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Update documentation
+6. Submit pull request
+
+## Development Setup
+
+### Prerequisites
+
+```bash
+# Install system dependencies
+sudo apt-get update
+sudo apt-get install python3-pip python3-venv iptables tcpdump
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install development dependencies
+pip install -r requirements-dev.txt
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+python3 -m pytest tests/
+
+# Run specific test file
+python3 -m pytest tests/test_firewall.py
+
+# Run with coverage
+python3 -m pytest --cov=firewall tests/
+```
+
+## Code Style
+
+- Follow PEP 8 guidelines
+- Use type hints
+- Write docstrings
+- Keep functions focused
+- Use meaningful names
+
+### Example
+
+```python
+from typing import List, Optional
+
+def process_packet(packet: bytes, rules: List[dict]) -> Optional[dict]:
+    """
+    Process a network packet against firewall rules.
+
+    Args:
+        packet: Raw packet data
+        rules: List of firewall rules
+
+    Returns:
+        dict: Processing result or None if no match
+    """
+    # Implementation
+```
+
+## Documentation
+
+### Writing Documentation
+
+- Use Markdown format
+- Include code examples
+- Keep it clear and concise
+- Update when changing code
+
+### Documentation Structure
+
+```
+docs/
+├── user/           # User guides
+├── technical/      # Technical documentation
+├── api/           # API reference
+└── examples/      # Code examples
+```
+
+## Testing
+
+### Writing Tests
+
+- Use pytest
+- Test edge cases
+- Mock external dependencies
+- Keep tests focused
+
+### Example Test
+
+```python
+def test_firewall_rule():
+    """Test firewall rule application."""
+    rule = {
+        "protocol": "tcp",
+        "ports": [80],
+        "action": "ACCEPT"
+    }
+    result = apply_rule(rule)
+    assert result["status"] == "success"
+```
+
+## Security
+
+### Security Guidelines
+
+- Never commit sensitive data
+- Follow security best practices
+- Report security issues privately
+- Keep dependencies updated
+
+### Security Issues
+
+Report security issues to: [Your Security Email]
+
+## Review Process
+
+1. Code review
+2. Documentation review
+3. Test review
+4. Security review
+5. Final approval
+
+## Release Process
+
+1. Update version
+2. Update changelog
+3. Run full test suite
+4. Create release tag
+5. Build packages
+6. Deploy
+
+## Getting Help
+
+- Check documentation
+- Search issues
+- Join discussions
+- Contact maintainers
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the project's MIT License.
+
+---
+
+Thank you for contributing to BaselFirewall! 

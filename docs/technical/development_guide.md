@@ -1,4 +1,13 @@
-# Development Guide
+# BaselFirewall Development Guide
+
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
+
+## Table of Contents
 
 ## Overview
 This guide provides detailed information for developers working on BaselFirewall, including setup, architecture, coding standards, and contribution guidelines.

@@ -1,4 +1,13 @@
-# Changelog
+# BaselFirewall Changelog
+
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
+
+## Table of Contents
 
 All notable changes to BaselFirewall will be documented in this file.
 
@@ -38,22 +47,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration file loading issues
 - Permission handling errors
 
-## [1.0.0] - 2024-01-01
+## [1.0.0] - 2025-05-07
 
 ### Added
-- Initial release
-- Basic firewall functionality
-- IP and port blocking
-- Simple NAT support
-- Command-line interface
-- Basic GUI
-- User authentication
+- Initial release of BaselFirewall
+- Complete firewall functionality with iptables integration
+- IDS/IPS capabilities with real-time packet inspection
+- DoS protection with rate limiting
+- Stateful inspection
+- NAT support
+- Command-line interface (CLI)
+- Graphical user interface (GUI)
+- Comprehensive documentation
+- Systemd service integration
+- Logging system with rotation
 - Configuration management
+- User authentication system
+- Attack detection and prevention
+- Performance monitoring
+- Security best practices implementation
 
 ### Security
-- Password hashing with bcrypt
-- Basic DoS protection
-- Simple IDS features
+- Default DROP policies
+- Rate limiting for ICMP and SSH
+- Port scanning detection
+- SYN flood protection
+- IP blacklisting
+- Connection tracking
+- Secure configuration management
+
+### Documentation
+- Complete user guide
+- Technical documentation
+- API reference
+- Security guidelines
+- Installation guide
+- Troubleshooting guide
+- Performance tuning guide
+- Attack testing guide
+- Presentation materials
+- Q&A preparation guide
+
+### Infrastructure
+- Systemd service configuration
+- Log rotation setup
+- Configuration file structure
+- Directory permissions
+- Backup and restore functionality
+- Version control integration
+- License (MIT)
+- Git configuration
 
 ## [0.9.0] - 2023-12-15
 

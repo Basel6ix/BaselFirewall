@@ -1,4 +1,24 @@
-# BaselFirewall Documentation
+# BaselFirewall Documentation Index
+
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
+
+Welcome to the BaselFirewall documentation. This guide will help you understand, install, and use BaselFirewall effectively.
+
+## Table of Contents
+
+- [BaselFirewall Documentation](#baselfirewall-documentation)
+  - [Author Information](#author-information)
+  - [Overview](#overview)
+  - [Key Features](#key-features)
+  - [Quick Start](#quick-start)
+  - [Documentation Sections](#documentation-sections)
+
+## BaselFirewall Documentation
 
 ## Author Information
 **Author:** Basel Abu-Radaha (B. Abu-Radaha)  

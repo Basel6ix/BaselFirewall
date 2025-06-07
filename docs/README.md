@@ -1,4 +1,11 @@
-# BaselFirewall Documentation
+# BaselFirewall
+
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
 
 Welcome to the BaselFirewall documentation. This guide will help you understand, install, and use BaselFirewall effectively.
 

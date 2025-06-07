@@ -1,4 +1,13 @@
-# Installation Guide
+# BaselFirewall Installation Guide
+
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
+
+## Table of Contents
 
 This guide provides detailed instructions for installing and configuring BaselFirewall on your Linux system.
 

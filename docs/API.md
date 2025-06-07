@@ -1,5 +1,14 @@
 # BaselFirewall API Documentation
 
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
+
+## Table of Contents
+
 ## Core Modules
 
 ### 1. Firewall Rules (`firewall.rules`)
@@ -121,33 +130,3 @@ The GUI interface is accessible through `main.py` by selecting option 2. It prov
 All API functions follow these error handling principles:
 1. Return `False` or raise an exception on failure
 2. Log errors using `log_event()`
-3. Provide meaningful error messages
-4. Handle permissions and authentication failures gracefully
-
-## Configuration Files
-
-### firewall_config.json
-```json
-{
-    "allowed_ips": [],
-    "blocked_ips": [],
-    "blocked_ports": [],
-    "firewall_enabled": true,
-    "dos_protection_enabled": false,
-    "ids_ips_enabled": false,
-    "nat_enabled": false,
-    "stateful_enabled": false,
-    "nat_config": {
-        "external_interface": "",
-        "internal_interface": "",
-        "internal_network": ""
-    }
-}
-```
-
-### users.json
-```json
-{
-    "users": {}
-}
-``` 

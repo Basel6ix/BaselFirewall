@@ -1,4 +1,13 @@
-# BaselFirewall Security Guidelines
+# BaselFirewall Security Guide
+
+<div style="text-align: center; margin: 2em 0;">
+<h2>B. Abu-Radaha</h2>
+<p>Supervisor: M. Nabrawi</p>
+<p>Hittien College</p>
+<p>May 2025</p>
+</div>
+
+## Table of Contents
 
 ## Security Policy
 
