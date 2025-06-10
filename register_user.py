@@ -7,19 +7,19 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 from firewall.auth import register_user
 
 def main():
-    print("👤 User Registration for Basel Firewall")
+    print("User Registration for Basel Firewall")
 
     username = input("Enter new username: ").strip()
     password = getpass.getpass("Enter password: ").strip()
     confirm = getpass.getpass("Confirm password: ").strip()
 
     if password != confirm:
-        print("❌ Passwords do not match.")
+        print("Passwords do not match.")
         return
 
     role = input("Role (admin/user) [default=user]: ").strip().lower()
     if role not in ["admin", "user", ""]:
-        print("❌ Invalid role. Use 'admin' or 'user'.")
+        print("Invalid role. Use 'admin' or 'user'.")
         return
 
     if role == "":
