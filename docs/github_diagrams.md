@@ -1,22 +1,6 @@
-# BaselFirewall Presentation
+# BaselFirewall System Diagrams
 
-## Title Slide
-- **Title:** BaselFirewall: A Robust Firewall Solution
-- **Subtitle:** Secure, Flexible, and Easy to Use
-
-## Overview
-- **What is BaselFirewall?**
-  - A Python-based firewall with advanced security features.
-  - Designed for simplicity and effectiveness.
-
-- **Key Features:**
-  - Packet filtering
-  - Intrusion Detection System (IDS/IPS)
-  - DoS protection
-  - Stateful inspection
-  - User-friendly CLI and GUI
-
-## System Architecture
+## 1. System Architecture
 ```mermaid
 graph TD
     %% Style definitions
@@ -79,7 +63,7 @@ graph TD
     class LOG,ALERT monitoring
 ```
 
-## Security Workflow
+## 2. Security Workflow
 ```mermaid
 graph LR
     %% Style definitions
@@ -134,7 +118,7 @@ graph LR
     class LOG,REPORT,NOTIFY monitor
 ```
 
-## Template System
+## 3. Template Management
 ```mermaid
 graph TD
     %% Style definitions
@@ -178,7 +162,7 @@ graph TD
     class M1,M2,M3 config
 ```
 
-## Attack Response
+## 4. Attack Response System
 ```mermaid
 graph TD
     %% Style definitions
@@ -223,43 +207,19 @@ graph TD
     class AL1,AL2,AL3 alert
 ```
 
-## Security Features
-- **Packet Filtering:**
-  - Default policies set to DROP
-  - Allow/block specific IPs and ports
-- **IDS/IPS:**
-  - Real-time packet inspection
-  - Detects and blocks suspicious activity
-- **DoS Protection:**
-  - Rate limiting for SYN and ICMP floods
-  - Prevents network overload
+## Using These Diagrams
 
-## Practical Implementation
-- **Using the System:**
-  1. Choose appropriate template
-  2. Configure security features
-  3. Monitor system status
-  4. Respond to alerts
+These diagrams are rendered automatically by GitHub when viewing this markdown file. They use the Mermaid.js syntax and are compatible with:
 
-## Demo
-- **Enable/Disable IDS/IPS:**
-  - Via CLI: `sudo python3 main.py` → Select option 1 → Enable/Disable
-  - Via GUI: `sudo python3 main.py` → Select option 2 → Use buttons
+- GitHub markdown
+- GitLab markdown
+- Azure DevOps wikis
+- Other platforms that support Mermaid
 
-## Testing
-- **Attack Simulation:**
-  - Ubuntu (attacker) vs. Kali (defender)
-  - Simulate SYN floods, port scanning, etc.
-  - Verify firewall blocks attacks
+To edit these diagrams:
+1. Copy the code between the \`\`\`mermaid tags
+2. Paste into [Mermaid Live Editor](https://mermaid.live)
+3. Make your changes
+4. Copy the updated code back into this file
 
-## Conclusion
-- **Summary:**
-  - BaselFirewall is secure, flexible, and easy to use
-  - Perfect for educational and demonstration purposes
-
-- **Future Work:**
-  - Enhance IDS/IPS capabilities
-  - Add more attack simulations
-  - Improve GUI features
-
---- 
+For more information about these diagrams, see [system_diagrams.md](./system_diagrams.md). 

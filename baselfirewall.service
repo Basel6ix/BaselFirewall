@@ -1,13 +1,19 @@
 [Unit]
 Description=BaselFirewall Service
 After=network.target
+Wants=network.target
+Documentation=file:/home/basel6ix/BaselFirewall/full_documentation.md
 
 [Service]
 Type=simple
 User=root
+WorkingDirectory=/home/basel6ix/BaselFirewall
+Environment=PYTHONPATH=/home/basel6ix/BaselFirewall
 ExecStart=/usr/bin/python3 /home/basel6ix/BaselFirewall/main.py --daemon
 Restart=always
 RestartSec=3
+StandardOutput=append:/var/log/baselfirewall/service.log
+StandardError=append:/var/log/baselfirewall/service.log
 
 [Install]
 WantedBy=multi-user.target 

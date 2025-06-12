@@ -117,7 +117,7 @@ _packet_inspector = PacketInspector()
 
 def _run_ips():
     interface = get_default_interface()
-    print(f"[*] IPS scanning started on interface {interface}...")
+    log_event(f"IPS scanning started on interface {interface}", "INFO")
     try:
         process = subprocess.Popen(
             ["tcpdump", "-i", interface, "-n", "-l", "--immediate-mode"],
@@ -126,14 +126,11 @@ def _run_ips():
             text=True
         )
         
-        print("[*] Packet capture started...")
+        log_event("Packet capture started", "INFO")
         while not _stop_event.is_set():
             line = process.stdout.readline()
             if not line:
                 break
-
-            # Debug: Print captured packet
-            print(f"[DEBUG] Captured packet: {line.strip()}")
 
             # Parse IP addresses
             ip_match = re.search(r'IP (\d+\.\d+\.\d+\.\d+)[. ].*?> (\d+\.\d+\.\d+\.\d+)', line)
@@ -141,20 +138,18 @@ def _run_ips():
                 src_ip = ip_match.group(1)
                 dst_ip = ip_match.group(2)
                 
-                # Debug: Print matched IPs
-                print(f"[DEBUG] Matched IPs - Source: {src_ip}, Destination: {dst_ip}")
-                
                 # Analyze packet
                 result = _packet_inspector.inspect_packet(line, src_ip)
                 if result:
-                    print(f"[DEBUG] Alert generated: {result}")
+                    log_event(result, "WARNING")
 
         process.terminate()
+    except subprocess.CalledProcessError as e:
+        log_event(f"IPS error: Failed to start packet capture: {str(e)}", "ERROR")
     except Exception as e:
-        log_event(f"IPS error: {str(e)}", "ERROR")
-        print(f"[ERROR] IPS encountered an error: {e}")
+        log_event(f"IPS error: Unexpected error: {str(e)}", "ERROR")
     finally:
-        print("[*] IPS stopped.")
+        log_event("IPS stopped", "INFO")
 
 def enable_ids_ips():
     """Enable IDS/IPS functionality"""

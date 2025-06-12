@@ -1,23 +1,35 @@
-# BaselFirewall Presentation
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BaselFirewall Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .diagram-container {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>BaselFirewall System Diagrams</h1>
 
-## Title Slide
-- **Title:** BaselFirewall: A Robust Firewall Solution
-- **Subtitle:** Secure, Flexible, and Easy to Use
-
-## Overview
-- **What is BaselFirewall?**
-  - A Python-based firewall with advanced security features.
-  - Designed for simplicity and effectiveness.
-
-- **Key Features:**
-  - Packet filtering
-  - Intrusion Detection System (IDS/IPS)
-  - DoS protection
-  - Stateful inspection
-  - User-friendly CLI and GUI
-
-## System Architecture
-```mermaid
+    <div class="diagram-container">
+        <h2>1. System Architecture</h2>
+        <div class="mermaid">
 graph TD
     %% Style definitions
     classDef userInterface fill:#2196f3,stroke:#1976d2,stroke-width:2px,color:#fff,font-weight:bold
@@ -77,10 +89,12 @@ graph TD
     class IDS,FW,DOS security
     class NET,PKT network
     class LOG,ALERT monitoring
-```
+        </div>
+    </div>
 
-## Security Workflow
-```mermaid
+    <div class="diagram-container">
+        <h2>2. Security Workflow</h2>
+        <div class="mermaid">
 graph LR
     %% Style definitions
     classDef input fill:#3949ab,stroke:#283593,stroke-width:2px,color:#fff,font-weight:bold
@@ -132,10 +146,12 @@ graph LR
     class DEC decision
     class ACT,DROP,ALERT action
     class LOG,REPORT,NOTIFY monitor
-```
+        </div>
+    </div>
 
-## Template System
-```mermaid
+    <div class="diagram-container">
+        <h2>3. Template System</h2>
+        <div class="mermaid">
 graph TD
     %% Style definitions
     classDef template fill:#5c6bc0,stroke:#3949ab,stroke-width:2px,color:#fff,font-weight:bold
@@ -176,10 +192,12 @@ graph TD
     class F1,F2,F3 feature
     class S1,S2,S3 security
     class M1,M2,M3 config
-```
+        </div>
+    </div>
 
-## Attack Response
-```mermaid
+    <div class="diagram-container">
+        <h2>4. Attack Response</h2>
+        <div class="mermaid">
 graph TD
     %% Style definitions
     classDef detection fill:#ff7043,stroke:#f4511e,stroke-width:2px,color:#fff,font-weight:bold
@@ -221,45 +239,7 @@ graph TD
     class A1,A2,A3,A4 analysis
     class R1,R2,R3 response
     class AL1,AL2,AL3 alert
-```
-
-## Security Features
-- **Packet Filtering:**
-  - Default policies set to DROP
-  - Allow/block specific IPs and ports
-- **IDS/IPS:**
-  - Real-time packet inspection
-  - Detects and blocks suspicious activity
-- **DoS Protection:**
-  - Rate limiting for SYN and ICMP floods
-  - Prevents network overload
-
-## Practical Implementation
-- **Using the System:**
-  1. Choose appropriate template
-  2. Configure security features
-  3. Monitor system status
-  4. Respond to alerts
-
-## Demo
-- **Enable/Disable IDS/IPS:**
-  - Via CLI: `sudo python3 main.py` → Select option 1 → Enable/Disable
-  - Via GUI: `sudo python3 main.py` → Select option 2 → Use buttons
-
-## Testing
-- **Attack Simulation:**
-  - Ubuntu (attacker) vs. Kali (defender)
-  - Simulate SYN floods, port scanning, etc.
-  - Verify firewall blocks attacks
-
-## Conclusion
-- **Summary:**
-  - BaselFirewall is secure, flexible, and easy to use
-  - Perfect for educational and demonstration purposes
-
-- **Future Work:**
-  - Enhance IDS/IPS capabilities
-  - Add more attack simulations
-  - Improve GUI features
-
---- 
+        </div>
+    </div>
+</body>
+</html> 

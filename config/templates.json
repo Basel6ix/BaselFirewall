@@ -27,5 +27,38 @@
         "ids_ips_enabled": true,
         "stateful_enabled": true,
         "nat_enabled": false
+    },
+    "Custom Network": {
+        "allowed_ports": [22, 53, 67, 68, 80, 443],
+        "blocked_ports": [23, 25, 135, 137, 138, 139, 445, 1433, 3389],
+        "dos_protection_enabled": true,
+        "ids_ips_enabled": true,
+        "stateful_enabled": true,
+        "nat_enabled": false,
+        "network_config": {
+            "protected_interface": "ens33",
+            "protected_ip": "192.168.1.33",
+            "network": "192.168.1.0/24"
+        }
+    },
+    "VMware Attacker Block": {
+        "description": "Template to block VMware-based attacker at 192.168.1.33",
+        "blocked_ips": ["192.168.1.33"],
+        "blocked_mac": "00:0c:29:d9:cb:6a",
+        "blocked_ports": [22, 23, 80, 443, 3389],
+        "dos_protection_enabled": true,
+        "ids_ips_enabled": true,
+        "stateful_enabled": true,
+        "ids_config": {
+            "sensitivity": "high",
+            "block_attacks": true,
+            "log_attacks": true,
+            "vmware_protection": true
+        },
+        "network_info": {
+            "attacker_network": "192.168.1.0/24",
+            "attacker_type": "VMware Virtual Machine",
+            "virtualization": true
+        }
     }
 } 

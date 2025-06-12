@@ -8,6 +8,161 @@ from firewall.nat import enable_nat, disable_nat
 from firewall.dos import enable_dos_protection, disable_dos_protection
 from firewall.logging import log_event, view_logs, clear_logs
 from firewall.alerts import add_alert, get_live_alerts
+import json
+import os
+
+TEMPLATES_FILE = os.path.join(os.path.dirname(__file__), '../config/templates.json')
+
+def load_templates():
+    try:
+        if os.path.exists(TEMPLATES_FILE):
+            with open(TEMPLATES_FILE, 'r') as f:
+                return json.load(f)
+        return {}
+    except Exception as e:
+        log_event(f"Error loading templates: {str(e)}", "ERROR")
+        return {}
+
+def save_templates(templates):
+    try:
+        with open(TEMPLATES_FILE, 'w') as f:
+            json.dump(templates, f, indent=4)
+        return True
+    except Exception as e:
+        log_event(f"Error saving templates: {str(e)}", "ERROR")
+        return False
+
+def list_templates_cli():
+    templates = load_templates()
+    if not templates:
+        print("No templates available.")
+        return
+    print("\nAvailable Templates:")
+    for name, config in templates.items():
+        print(f"\n{name}:")
+        print("  Allowed Ports:", config.get("allowed_ports", []))
+        print("  Blocked Ports:", config.get("blocked_ports", []))
+        print("  DoS Protection:", "Enabled" if config.get("dos_protection_enabled", False) else "Disabled")
+        print("  IDS/IPS:", "Enabled" if config.get("ids_ips_enabled", False) else "Disabled")
+        print("  Stateful Inspection:", "Enabled" if config.get("stateful_enabled", False) else "Disabled")
+
+def apply_template_cli():
+    templates = load_templates()
+    if not templates:
+        print("No templates available.")
+        return
+    
+    print("\nAvailable Templates:")
+    for i, name in enumerate(templates.keys(), 1):
+        print(f"{i}. {name}")
+    
+    try:
+        choice = int(prompt("\nSelect template number to apply: "))
+        if 1 <= choice <= len(templates):
+            template_name = list(templates.keys())[choice - 1]
+            template = templates[template_name]
+            
+            config = load_config()
+            
+            # Apply template settings
+            config["blocked_ports"] = template.get("blocked_ports", [])
+            config["dos_protection_enabled"] = template.get("dos_protection_enabled", False)
+            config["ids_ips_enabled"] = template.get("ids_ips_enabled", False)
+            config["stateful_enabled"] = template.get("stateful_enabled", False)
+            
+            # Apply allowed ports
+            for port in template.get("allowed_ports", []):
+                if port not in config["blocked_ports"]:
+                    config["blocked_ports"].append(port)
+            
+            if save_config(config):
+                add_alert(f"Applied template: {template_name}", "INFO")
+                log_event(f"Applied template: {template_name}", "INFO")
+                print(f"\nSuccessfully applied template: {template_name}")
+            else:
+                print("\nError applying template.")
+        else:
+            print("\nInvalid template number.")
+    except ValueError:
+        print("\nInvalid input. Please enter a number.")
+
+def add_template_cli():
+    name = prompt("Enter template name: ")
+    if not name:
+        print("Template name cannot be empty.")
+        return
+    
+    templates = load_templates()
+    if name in templates:
+        print("Template with this name already exists.")
+        return
+    
+    template = {
+        "allowed_ports": [],
+        "blocked_ports": [],
+        "dos_protection_enabled": True,
+        "ids_ips_enabled": True,
+        "stateful_enabled": True
+    }
+    
+    # Get allowed ports
+    ports = prompt("Enter allowed ports (comma-separated numbers): ")
+    if ports.strip():
+        try:
+            template["allowed_ports"] = [int(p.strip()) for p in ports.split(",")]
+        except ValueError:
+            print("Invalid port numbers. Using empty list.")
+    
+    # Get blocked ports
+    ports = prompt("Enter blocked ports (comma-separated numbers): ")
+    if ports.strip():
+        try:
+            template["blocked_ports"] = [int(p.strip()) for p in ports.split(",")]
+        except ValueError:
+            print("Invalid port numbers. Using empty list.")
+    
+    # Get feature states
+    template["dos_protection_enabled"] = prompt("Enable DoS protection? (yes/no): ").lower() == "yes"
+    template["ids_ips_enabled"] = prompt("Enable IDS/IPS? (yes/no): ").lower() == "yes"
+    template["stateful_enabled"] = prompt("Enable stateful inspection? (yes/no): ").lower() == "yes"
+    
+    templates[name] = template
+    if save_templates(templates):
+        add_alert(f"Added new template: {name}", "INFO")
+        log_event(f"Added new template: {name}", "INFO")
+        print(f"\nSuccessfully added template: {name}")
+    else:
+        print("\nError saving template.")
+
+def delete_template_cli():
+    templates = load_templates()
+    if not templates:
+        print("No templates available.")
+        return
+    
+    print("\nAvailable Templates:")
+    for i, name in enumerate(templates.keys(), 1):
+        print(f"{i}. {name}")
+    
+    try:
+        choice = int(prompt("\nSelect template number to delete: "))
+        if 1 <= choice <= len(templates):
+            template_name = list(templates.keys())[choice - 1]
+            confirm = prompt(f"Are you sure you want to delete template '{template_name}'? (yes/no): ")
+            if confirm.lower() == "yes":
+                del templates[template_name]
+                if save_templates(templates):
+                    add_alert(f"Deleted template: {template_name}", "INFO")
+                    log_event(f"Deleted template: {template_name}", "INFO")
+                    print(f"\nSuccessfully deleted template: {template_name}")
+                else:
+                    print("\nError deleting template.")
+            else:
+                print("\nTemplate deletion cancelled.")
+        else:
+            print("\nInvalid template number.")
+    except ValueError:
+        print("\nInvalid input. Please enter a number.")
 
 def prompt(msg):
     return input(msg).strip()
@@ -52,8 +207,12 @@ def print_menu(is_admin_user):
         print("19. Remove User")
         print("20. List Users")
         print("21. Reset Firewall Configuration")
-        print("22. Logout")
-        print("23. Clear Logs")
+        print("22. List Templates")
+        print("23. Apply Template")
+        print("24. Add Template")
+        print("25. Delete Template")
+        print("26. Logout")
+        print("27. Clear Logs")
 
 def add_allowed_ip_cli():
     ip = prompt("Enter IP to allow: ")
@@ -242,79 +401,75 @@ def reset_firewall_cli():
         print("Firewall configuration reset.")
 
 def main():
-    username = None
-    while not username:
         username = login()
-    admin = is_admin(username)
+    if not username:
+        return
 
+    is_admin_user = is_admin(username)
     while True:
-        print_menu(admin)
-        choice = prompt("Enter choice: ")
-        if not choice.isdigit():
-            print("Invalid input, enter a number.")
-            continue
-        choice = int(choice)
+        print_menu(is_admin_user)
+        choice = prompt("\nEnter your choice: ")
 
-        if choice == 0:
-            add_alert(f"User '{username}' logged out", "INFO")
-            log_event(f"User '{username}' logged out", "INFO")
-            print("Exiting BaselFirewall CLI. Goodbye!")
-            sys.exit(0)
-
-        elif choice == 1:
+        if choice == "0":
+            print("Exiting...")
+            break
+        elif choice == "1":
             add_allowed_ip_cli()
-        elif choice == 2:
+        elif choice == "2":
             remove_allowed_ip_cli()
-        elif choice == 3:
+        elif choice == "3":
             show_allowed_ips_cli()
-        elif choice == 4:
+        elif choice == "4":
             add_blocked_port_cli()
-        elif choice == 5:
+        elif choice == "5":
             remove_blocked_port_cli()
-        elif choice == 6:
+        elif choice == "6":
             show_blocked_ports_cli()
-        elif choice == 7:
+        elif choice == "7":
             enable_stateful_cli()
-        elif choice == 8:
+        elif choice == "8":
             disable_stateful_cli()
-        elif choice == 9:
+        elif choice == "9":
             enable_ids_ips_cli()
-        elif choice == 10:
+        elif choice == "10":
             disable_ids_ips_cli()
-        elif choice == 11:
+        elif choice == "11":
             enable_nat_cli()
-        elif choice == 12:
+        elif choice == "12":
             disable_nat_cli()
-        elif choice == 13:
+        elif choice == "13":
             set_nat_ip_cli()
-        elif choice == 14:
+        elif choice == "14":
             enable_dos_cli()
-        elif choice == 15:
+        elif choice == "15":
             disable_dos_cli()
-        elif choice == 16:
+        elif choice == "16":
             view_logs_cli()
-        elif choice == 17:
+        elif choice == "17":
             view_alerts_cli()
-        elif choice == 18 and admin:
+        elif is_admin_user and choice == "18":
             add_user_cli()
-        elif choice == 19 and admin:
+        elif is_admin_user and choice == "19":
             remove_user_cli()
-        elif choice == 20 and admin:
+        elif is_admin_user and choice == "20":
             list_users_cli()
-        elif choice == 21 and admin:
+        elif is_admin_user and choice == "21":
             reset_firewall_cli()
-        elif choice == 22 and admin:
-            add_alert(f"User '{username}' logged out", "INFO")
-            log_event(f"User '{username}' logged out", "INFO")
+        elif is_admin_user and choice == "22":
+            list_templates_cli()
+        elif is_admin_user and choice == "23":
+            apply_template_cli()
+        elif is_admin_user and choice == "24":
+            add_template_cli()
+        elif is_admin_user and choice == "25":
+            delete_template_cli()
+        elif is_admin_user and choice == "26":
             print("Logging out...")
-            username = None
-            while not username:
-                username = login()
-            admin = is_admin(username)
-        elif choice == 23 and admin:
+            break
+        elif is_admin_user and choice == "27":
             clear_logs_cli()
         else:
-            print("Invalid choice or insufficient privileges.")
+            print("Invalid choice. Please try again.")
 
 if __name__ == "__main__":
     main()

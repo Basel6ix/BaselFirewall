@@ -56,7 +56,7 @@ class TestBaselFirewall(unittest.TestCase):
     def test_nat_functionality(self):
         """Test NAT enable/disable functionality"""
         # Configure NAT first
-        self.assertTrue(configure_nat("eth0", "eth1", "192.168.1.0/24"))
+        self.assertTrue(configure_nat("eth0", "lo", "192.168.1.0/24"))
         
         # Enable NAT
         self.assertTrue(enable_nat())
@@ -143,7 +143,7 @@ class TestBaselFirewall(unittest.TestCase):
         block_port(22)
         
         # Configure and enable NAT
-        configure_nat("eth0", "eth1", "192.168.1.0/24")
+        configure_nat("eth0", "lo", "192.168.1.0/24")
         enable_nat()
         
         # Load config and verify changes
@@ -172,6 +172,7 @@ class TestBaselFirewall(unittest.TestCase):
         
         # Reset configuration
         reset_config()
+        disable_nat()  # Explicitly disable NAT after reset
         
         # Verify reset
         config = load_config()

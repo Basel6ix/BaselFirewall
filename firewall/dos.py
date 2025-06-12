@@ -81,7 +81,14 @@ def disable_dos_protection():
         set_feature_state("dos_protection_enabled", False)
         log_event("DoS protection disabled", "WARNING")
         print("[*] DoS protection disabled.")
-        subprocess.call(["iptables", "-F", "INPUT"])
+        
+        # Remove only DoS-specific rules
+        subprocess.call(["iptables", "-D", "INPUT", "-p", "tcp", "--syn", "-m", "limit", "--limit", "1/s", "--limit-burst", "3", "-j", "ACCEPT"])
+        subprocess.call(["iptables", "-D", "INPUT", "-p", "tcp", "--syn", "-j", "DROP"])
+        subprocess.call(["iptables", "-D", "INPUT", "-p", "icmp", "-m", "limit", "--limit", "1/s", "--limit-burst", "5", "-j", "ACCEPT"])
+        subprocess.call(["iptables", "-D", "INPUT", "-p", "icmp", "-j", "DROP"])
+        subprocess.call(["iptables", "-D", "INPUT", "-p", "tcp", "--dport", "80", "-m", "connlimit", "--connlimit-above", "20", "-j", "REJECT"])
+        
         return True
     except Exception as e:
         log_event(f"Failed to disable DoS protection: {str(e)}", "ERROR")

@@ -1,22 +1,23 @@
-# BaselFirewall Presentation
+# Testing Mermaid Diagrams
 
-## Title Slide
-- **Title:** BaselFirewall: A Robust Firewall Solution
-- **Subtitle:** Secure, Flexible, and Easy to Use
+## How to Use These Diagrams
 
-## Overview
-- **What is BaselFirewall?**
-  - A Python-based firewall with advanced security features.
-  - Designed for simplicity and effectiveness.
+1. Make sure you have VS Code installed with these extensions:
+   - Markdown Preview Enhanced
+   - Markdown Preview Mermaid Support
 
-- **Key Features:**
-  - Packet filtering
-  - Intrusion Detection System (IDS/IPS)
-  - DoS protection
-  - Stateful inspection
-  - User-friendly CLI and GUI
+2. To view the diagrams:
+   - Press `Ctrl+Shift+V` to open preview
+   - Or `Ctrl+K V` to open preview to the side
 
-## System Architecture
+3. To edit diagrams:
+   - Edit the code between the ```mermaid tags
+   - The preview will update automatically
+
+## 1. System Architecture Diagram
+
+This diagram shows the overall system structure:
+
 ```mermaid
 graph TD
     %% Style definitions
@@ -79,7 +80,10 @@ graph TD
     class LOG,ALERT monitoring
 ```
 
-## Security Workflow
+## 2. Security Workflow Diagram
+
+This diagram shows the packet processing flow:
+
 ```mermaid
 graph LR
     %% Style definitions
@@ -134,7 +138,10 @@ graph LR
     class LOG,REPORT,NOTIFY monitor
 ```
 
-## Template System
+## 3. Template System Diagram
+
+This diagram shows the template management system:
+
 ```mermaid
 graph TD
     %% Style definitions
@@ -178,7 +185,10 @@ graph TD
     class M1,M2,M3 config
 ```
 
-## Attack Response
+## 4. Attack Response Diagram
+
+This diagram shows the threat detection and response system:
+
 ```mermaid
 graph TD
     %% Style definitions
@@ -223,43 +233,47 @@ graph TD
     class AL1,AL2,AL3 alert
 ```
 
-## Security Features
-- **Packet Filtering:**
-  - Default policies set to DROP
-  - Allow/block specific IPs and ports
-- **IDS/IPS:**
-  - Real-time packet inspection
-  - Detects and blocks suspicious activity
-- **DoS Protection:**
-  - Rate limiting for SYN and ICMP floods
-  - Prevents network overload
+## How to Modify These Diagrams
 
-## Practical Implementation
-- **Using the System:**
-  1. Choose appropriate template
-  2. Configure security features
-  3. Monitor system status
-  4. Respond to alerts
+1. **Basic Syntax:**
+   - Nodes: `NodeID["Label"]`
+   - Connections: `NodeA --> NodeB`
+   - Styled Connections: `NodeA -->|"label"| NodeB`
+   - Groups: `subgraph "Title" ... end`
 
-## Demo
-- **Enable/Disable IDS/IPS:**
-  - Via CLI: `sudo python3 main.py` → Select option 1 → Enable/Disable
-  - Via GUI: `sudo python3 main.py` → Select option 2 → Use buttons
+2. **Styling:**
+   - Define styles: `classDef styleName fill:#color,...`
+   - Apply styles: `class NodeID styleName`
+   - Multiple nodes: `class Node1,Node2,Node3 styleName`
 
-## Testing
-- **Attack Simulation:**
-  - Ubuntu (attacker) vs. Kali (defender)
-  - Simulate SYN floods, port scanning, etc.
-  - Verify firewall blocks attacks
+3. **Common Operations:**
+   - Add node: `NewNode["🆕 Label"]`
+   - Connect nodes: `NewNode --> ExistingNode`
+   - Group nodes: 
+     ```mermaid
+     subgraph "Group Name"
+         Node1
+         Node2
+     end
+     ```
 
-## Conclusion
-- **Summary:**
-  - BaselFirewall is secure, flexible, and easy to use
-  - Perfect for educational and demonstration purposes
+4. **Tips:**
+   - Use emojis for visual appeal
+   - Keep consistent color schemes
+   - Use meaningful labels
+   - Group related components
+   - Add descriptive connection labels
 
-- **Future Work:**
-  - Enhance IDS/IPS capabilities
-  - Add more attack simulations
-  - Improve GUI features
+## Keyboard Shortcuts
 
---- 
+1. **VS Code Navigation:**
+   - `Ctrl+Shift+V`: Open preview
+   - `Ctrl+K V`: Split preview
+   - `Ctrl+S`: Save and update
+   - `Alt+Z`: Toggle word wrap
+
+2. **Editing Tips:**
+   - Use multi-cursor: `Alt+Click`
+   - Select similar: `Ctrl+D`
+   - Block select: `Alt+Shift+Click`
+   - Find/Replace: `Ctrl+F` 
