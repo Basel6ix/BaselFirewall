@@ -2,12 +2,14 @@ import ipaddress
 import subprocess
 from .logging import log_event
 
+
 def is_valid_ip(ip):
     try:
         ipaddress.ip_address(ip)
         return True
     except ValueError:
         return False
+
 
 def run_command(cmd):
     """Run a shell command and return True if successful"""
@@ -16,6 +18,7 @@ def run_command(cmd):
         return True
     except subprocess.CalledProcessError:
         return False
+
 
 def enable_ip_forwarding():
     """Enable IP forwarding"""
@@ -26,6 +29,7 @@ def enable_ip_forwarding():
         return result
     except Exception:
         return False
+
 
 def disable_ip_forwarding():
     """Disable IP forwarding"""

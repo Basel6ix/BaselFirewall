@@ -1,10 +1,12 @@
-import sys
 import os
+import sys
 import getpass
+from firewall.auth import load_users, save_users, hash_password
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "firewall")))
 
 from firewall.auth import register_user
+
 
 def main():
     print("User Registration for Basel Firewall")
@@ -30,6 +32,7 @@ def main():
         print(f"✅ {message}")
     else:
         print(f"❌ {message}")
+
 
 if __name__ == "__main__":
     main()

@@ -1,19 +1,40 @@
 [Unit]
-Description=BaselFirewall Service
+Description=BaselFirewall - Advanced Firewall Protection System
+Documentation=https://github.com/basel6ix/BaselFirewall
 After=network.target
-Wants=network.target
-Documentation=file:/home/basel6ix/BaselFirewall/full_documentation.md
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=simple
 User=root
+Group=root
 WorkingDirectory=/home/basel6ix/BaselFirewall
 Environment=PYTHONPATH=/home/basel6ix/BaselFirewall
-ExecStart=/usr/bin/python3 /home/basel6ix/BaselFirewall/main.py --daemon
+ExecStartPre=/bin/bash -c 'mkdir -p /var/log/baselfirewall /var/run/baselfirewall'
+ExecStart=/home/basel6ix/BaselFirewall/venv/bin/python main.py
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=3
 StandardOutput=append:/var/log/baselfirewall/service.log
-StandardError=append:/var/log/baselfirewall/service.log
+StandardError=append:/var/log/baselfirewall/error.log
+
+# Security settings
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+MemoryDenyWriteExecute=yes
 
 [Install]
 WantedBy=multi-user.target 

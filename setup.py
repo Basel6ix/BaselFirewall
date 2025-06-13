@@ -35,4 +35,4 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: System :: Networking :: Firewalls",
     ],
-) 
+)

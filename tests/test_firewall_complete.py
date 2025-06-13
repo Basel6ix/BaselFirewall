@@ -3,17 +3,29 @@ import os
 import sys
 import json
 import time
+import pytest
+import socket
 from firewall.rules import (
-    apply_firewall_rules, allow_ip, block_ip, block_port,
-    remove_allowed_ip, remove_blocked_ip, remove_blocked_port
+    apply_firewall_rules,
+    allow_ip,
+    block_ip,
+    block_port,
+    remove_allowed_ip,
+    remove_blocked_ip,
+    remove_blocked_port,
 )
 from firewall.nat import enable_nat, disable_nat, configure_nat
 from firewall.dos import enable_dos_protection, disable_dos_protection
 from firewall.ids_ips import enable_ids_ips, disable_ids_ips
 from firewall.stateful import enable_stateful_inspection, disable_stateful_inspection
-from firewall.config_manager import load_config, save_config, reset_config
+from firewall.config_manager import (
+    load_config,
+    save_config,
+    reset_config
+)
 from firewall.logging import log_event, view_logs, clear_logs
 from firewall.alerts import add_alert, get_live_alerts, clear_alerts
+
 
 class TestBaselFirewall(unittest.TestCase):
     @classmethod
@@ -21,10 +33,10 @@ class TestBaselFirewall(unittest.TestCase):
         # Ensure we're running as root/sudo
         if os.geteuid() != 0:
             raise PermissionError("These tests must be run as root/sudo")
-        
+
         # Save original config
         cls.original_config = load_config()
-        
+
         # Reset firewall to known state
         reset_config()
         clear_logs()
@@ -57,7 +69,7 @@ class TestBaselFirewall(unittest.TestCase):
         """Test NAT enable/disable functionality"""
         # Configure NAT first
         self.assertTrue(configure_nat("eth0", "lo", "192.168.1.0/24"))
-        
+
         # Enable NAT
         self.assertTrue(enable_nat())
         config = load_config()
@@ -141,11 +153,11 @@ class TestBaselFirewall(unittest.TestCase):
         # Make some changes
         allow_ip("192.168.1.150")
         block_port(22)
-        
+
         # Configure and enable NAT
         configure_nat("eth0", "lo", "192.168.1.0/24")
         enable_nat()
-        
+
         # Load config and verify changes
         config = load_config()
         self.assertIn("192.168.1.150", config["allowed_ips"])
@@ -169,11 +181,11 @@ class TestBaselFirewall(unittest.TestCase):
         allow_ip("192.168.1.250")
         block_port(80)
         enable_nat()
-        
+
         # Reset configuration
         reset_config()
         disable_nat()  # Explicitly disable NAT after reset
-        
+
         # Verify reset
         config = load_config()
         self.assertEqual(config["allowed_ips"], [])
@@ -184,15 +196,16 @@ class TestBaselFirewall(unittest.TestCase):
     def tearDownClass(cls):
         # Restore original configuration
         save_config(cls.original_config)
-        
+
         # Disable all features
         disable_nat()
         disable_dos_protection()
         disable_ids_ips()
         disable_stateful_inspection()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     if os.geteuid() != 0:
         print("Error: These tests must be run as root/sudo")
         sys.exit(1)
-    unittest.main() 
+    unittest.main()

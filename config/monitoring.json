@@ -1,0 +1,91 @@
+{
+    "dashboard": {
+        "refresh_rate": 5,
+        "max_entries": 100,
+        "categories": {
+            "attacks": {
+                "enabled": true,
+                "priority": "high",
+                "alert_threshold": 5,
+                "notification": true
+            },
+            "system": {
+                "enabled": true,
+                "priority": "medium",
+                "metrics": ["cpu", "memory", "disk", "network"],
+                "threshold_cpu": 80,
+                "threshold_memory": 80,
+                "threshold_disk": 90
+            },
+            "firewall": {
+                "enabled": true,
+                "priority": "high",
+                "show_rules": true,
+                "show_connections": true
+            }
+        },
+        "alerts": {
+            "email": {
+                "enabled": false,
+                "smtp_server": "",
+                "smtp_port": 587,
+                "from_address": "",
+                "to_address": ""
+            },
+            "desktop": {
+                "enabled": true,
+                "priority_threshold": "warning"
+            },
+            "log": {
+                "enabled": true,
+                "rotate_size": "10M",
+                "keep_days": 30
+            }
+        }
+    },
+    "visualization": {
+        "attack_map": {
+            "enabled": true,
+            "update_interval": 5,
+            "max_points": 100
+        },
+        "traffic_graph": {
+            "enabled": true,
+            "interval": "1m",
+            "retention": "24h"
+        },
+        "threat_levels": {
+            "low": {
+                "color": "green",
+                "threshold": 1
+            },
+            "medium": {
+                "color": "yellow",
+                "threshold": 5
+            },
+            "high": {
+                "color": "red",
+                "threshold": 10
+            }
+        }
+    },
+    "reporting": {
+        "daily_summary": {
+            "enabled": true,
+            "time": "00:00",
+            "format": "pdf",
+            "sections": [
+                "attack_summary",
+                "system_health",
+                "rule_changes",
+                "blocked_ips"
+            ]
+        },
+        "incident_report": {
+            "enabled": true,
+            "min_severity": "warning",
+            "include_context": true,
+            "retain_days": 90
+        }
+    }
+} 

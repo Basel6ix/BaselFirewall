@@ -1,8 +1,20 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog, filedialog
-from firewall.auth import authenticate, is_admin, add_user, remove_user, list_users, log_login_attempt
+from tkinter import ttk, messagebox, simpledialog, filedialog, scrolledtext
+from firewall.auth import (
+    authenticate,
+    is_admin,
+    add_user,
+    remove_user,
+    list_users,
+    log_login_attempt,
+)
 from firewall.rules import allow_ip, remove_allowed_ip, block_port, remove_blocked_port
-from firewall.config_manager import load_config, reset_config, set_nat_config, save_config
+from firewall.config_manager import (
+    load_config,
+    reset_config,
+    set_nat_config,
+    save_config,
+)
 from firewall.ids_ips import enable_ids_ips, disable_ids_ips
 from firewall.stateful import enable_stateful_inspection, disable_stateful_inspection
 from firewall.nat import enable_nat, disable_nat
@@ -12,6 +24,7 @@ from firewall.alerts import add_alert, get_live_alerts
 import json
 import subprocess
 import time
+
 
 class LoginDialog(simpledialog.Dialog):
     def body(self, master):
@@ -28,12 +41,19 @@ class LoginDialog(simpledialog.Dialog):
         self.username = self.username_entry.get().strip()
         self.password = self.password_entry.get().strip()
 
+
 class BaselFirewallGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("BaselFirewall GUI")
-        self.geometry("800x600")
+        self.geometry("1024x768")
         self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # Configure text tags for alerts
+        self.style = ttk.Style()
+        self.style.configure("Error.TLabel", foreground="red")
+        self.style.configure("Warning.TLabel", foreground="orange")
+        self.style.configure("Info.TLabel", foreground="blue")
 
         self.username = None
         self.admin = False
@@ -86,27 +106,47 @@ class BaselFirewallGUI(tk.Tk):
         allowed_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
         self.allowed_ips_listbox = tk.Listbox(allowed_frame, height=8)
-        self.allowed_ips_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0,5), pady=5)
+        self.allowed_ips_listbox.pack(
+            side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5), pady=5
+        )
 
         allowed_buttons = ttk.Frame(allowed_frame)
         allowed_buttons.pack(side=tk.LEFT, fill=tk.Y, pady=5)
 
-        ttk.Button(allowed_buttons, text="Add Allowed IP", command=self.add_allowed_ip_gui).pack(fill=tk.X, pady=2)
-        ttk.Button(allowed_buttons, text="Remove Selected IP", command=self.remove_allowed_ip_gui).pack(fill=tk.X, pady=2)
-        ttk.Button(allowed_buttons, text="Refresh List", command=self.load_allowed_ips).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            allowed_buttons, text="Add Allowed IP", command=self.add_allowed_ip_gui
+        ).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            allowed_buttons,
+            text="Remove Selected IP",
+            command=self.remove_allowed_ip_gui,
+        ).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            allowed_buttons, text="Refresh List", command=self.load_allowed_ips
+        ).pack(fill=tk.X, pady=2)
 
         blocked_frame = ttk.LabelFrame(tab, text="Blocked Ports")
         blocked_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
         self.blocked_ports_listbox = tk.Listbox(blocked_frame, height=8)
-        self.blocked_ports_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0,5), pady=5)
+        self.blocked_ports_listbox.pack(
+            side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5), pady=5
+        )
 
         blocked_buttons = ttk.Frame(blocked_frame)
         blocked_buttons.pack(side=tk.LEFT, fill=tk.Y, pady=5)
 
-        ttk.Button(blocked_buttons, text="Add Blocked Port", command=self.add_blocked_port_gui).pack(fill=tk.X, pady=2)
-        ttk.Button(blocked_buttons, text="Remove Selected Port", command=self.remove_blocked_port_gui).pack(fill=tk.X, pady=2)
-        ttk.Button(blocked_buttons, text="Refresh List", command=self.load_blocked_ports).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            blocked_buttons, text="Add Blocked Port", command=self.add_blocked_port_gui
+        ).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            blocked_buttons,
+            text="Remove Selected Port",
+            command=self.remove_blocked_port_gui,
+        ).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            blocked_buttons, text="Refresh List", command=self.load_blocked_ports
+        ).pack(fill=tk.X, pady=2)
 
         self.load_allowed_ips()
         self.load_blocked_ports()
@@ -183,31 +223,46 @@ class BaselFirewallGUI(tk.Tk):
         self.stateful_var = tk.BooleanVar()
         stateful_frame = ttk.LabelFrame(tab, text="Stateful Inspection")
         stateful_frame.pack(fill=tk.X, padx=10, pady=5)
-        self.stateful_check = ttk.Checkbutton(stateful_frame, text="Enable Stateful Inspection",
-                                              variable=self.stateful_var, command=self.toggle_stateful)
+        self.stateful_check = ttk.Checkbutton(
+            stateful_frame,
+            text="Enable Stateful Inspection",
+            variable=self.stateful_var,
+            command=self.toggle_stateful,
+        )
         self.stateful_check.pack(anchor=tk.W, padx=5, pady=5)
 
         self.ids_ips_var = tk.BooleanVar()
         ids_ips_frame = ttk.LabelFrame(tab, text="IDS/IPS")
         ids_ips_frame.pack(fill=tk.X, padx=10, pady=5)
-        self.ids_ips_check = ttk.Checkbutton(ids_ips_frame, text="Enable IDS/IPS",
-                                             variable=self.ids_ips_var, command=self.toggle_ids_ips)
+        self.ids_ips_check = ttk.Checkbutton(
+            ids_ips_frame,
+            text="Enable IDS/IPS",
+            variable=self.ids_ips_var,
+            command=self.toggle_ids_ips,
+        )
         self.ids_ips_check.pack(anchor=tk.W, padx=5, pady=5)
 
         self.nat_var = tk.BooleanVar()
         nat_frame = ttk.LabelFrame(tab, text="NAT")
         nat_frame.pack(fill=tk.X, padx=10, pady=5)
-        self.nat_check = ttk.Checkbutton(nat_frame, text="Enable NAT",
-                                         variable=self.nat_var, command=self.toggle_nat)
+        self.nat_check = ttk.Checkbutton(
+            nat_frame, text="Enable NAT", variable=self.nat_var, command=self.toggle_nat
+        )
         self.nat_check.pack(anchor=tk.W, padx=5, pady=5)
 
-        ttk.Button(nat_frame, text="Set NAT IP", command=self.set_nat_ip_gui).pack(padx=5, pady=5)
+        ttk.Button(nat_frame, text="Set NAT IP", command=self.set_nat_ip_gui).pack(
+            padx=5, pady=5
+        )
 
         self.dos_var = tk.BooleanVar()
         dos_frame = ttk.LabelFrame(tab, text="DoS Protection")
         dos_frame.pack(fill=tk.X, padx=10, pady=5)
-        self.dos_check = ttk.Checkbutton(dos_frame, text="Enable DoS Protection",
-                                         variable=self.dos_var, command=self.toggle_dos)
+        self.dos_check = ttk.Checkbutton(
+            dos_frame,
+            text="Enable DoS Protection",
+            variable=self.dos_var,
+            command=self.toggle_dos,
+        )
         self.dos_check.pack(anchor=tk.W, padx=5, pady=5)
 
         self.load_feature_states()
@@ -276,157 +331,128 @@ class BaselFirewallGUI(tk.Tk):
             messagebox.showinfo("DoS Protection", "DoS Protection disabled.")
 
     def create_logs_tab(self):
+        """Create the logs tab with real-time updates"""
         tab = ttk.Frame(self.tabs)
-        self.tabs.add(tab, text="Logs & Monitoring")
+        self.tabs.add(tab, text="Logs & Alerts")
 
-        # Create notebook for different log types
+        # Create a notebook for different log types
         log_notebook = ttk.Notebook(tab)
-        log_notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        log_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Firewall Logs
-        firewall_log_frame = ttk.Frame(log_notebook)
-        log_notebook.add(firewall_log_frame, text="Firewall Logs")
-        self.firewall_log_text = tk.Text(firewall_log_frame, height=10, width=80)
+        firewall_frame = ttk.Frame(log_notebook)
+        log_notebook.add(firewall_frame, text="Firewall Logs")
+        
+        self.firewall_log_text = scrolledtext.ScrolledText(firewall_frame, height=20, wrap=tk.WORD)
         self.firewall_log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Alerts
+        # IPTables Logs
+        iptables_frame = ttk.Frame(log_notebook)
+        log_notebook.add(iptables_frame, text="IPTables Logs")
+        
+        self.iptables_log_text = scrolledtext.ScrolledText(iptables_frame, height=20, wrap=tk.WORD)
+        self.iptables_log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Live Alerts
         alerts_frame = ttk.Frame(log_notebook)
-        log_notebook.add(alerts_frame, text="Alerts")
-        self.alerts_text = tk.Text(alerts_frame, height=10, width=80)
+        log_notebook.add(alerts_frame, text="Live Alerts")
+        
+        self.alerts_text = scrolledtext.ScrolledText(alerts_frame, height=20, wrap=tk.WORD)
         self.alerts_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Traffic Monitoring
-        traffic_frame = ttk.Frame(log_notebook)
-        log_notebook.add(traffic_frame, text="Traffic Monitor")
-        
-        # Traffic graph
-        self.traffic_canvas = tk.Canvas(traffic_frame, height=200, width=600)
-        self.traffic_canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Traffic stats
-        stats_frame = ttk.Frame(traffic_frame)
-        stats_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        self.packets_label = ttk.Label(stats_frame, text="Packets: 0")
-        self.packets_label.pack(side=tk.LEFT, padx=5)
-        
-        self.bytes_label = ttk.Label(stats_frame, text="Bytes: 0")
-        self.bytes_label.pack(side=tk.LEFT, padx=5)
-        
-        self.connections_label = ttk.Label(stats_frame, text="Active Connections: 0")
-        self.connections_label.pack(side=tk.LEFT, padx=5)
-
-        # Buttons
+        # Control buttons
         button_frame = ttk.Frame(tab)
-        button_frame.pack(fill=tk.X, padx=10, pady=5)
+        button_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Button(button_frame, text="Refresh Logs", command=self.refresh_logs).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Clear Logs", command=self.clear_logs_gui).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Export Logs", command=self.export_logs).pack(side=tk.LEFT, padx=5)
-
-        # Start monitoring
-        self.start_traffic_monitoring()
-
-    def start_traffic_monitoring(self):
-        """Start real-time traffic monitoring"""
-        self.traffic_data = {
-            'time': [],
-            'packets': [],
-            'bytes': []
-        }
-        self.update_traffic_graph()
-        self.after(1000, self.update_traffic_stats)
-
-    def update_traffic_graph(self):
-        """Update the traffic graph"""
-        self.traffic_canvas.delete("all")
+        ttk.Button(button_frame, text="Refresh", command=self.refresh_all_logs).pack(side=tk.LEFT, padx=5)
         
-        if len(self.traffic_data['time']) > 1:
-            # Calculate scaling factors
-            max_packets = max(self.traffic_data['packets']) if self.traffic_data['packets'] else 1
-            max_bytes = max(self.traffic_data['bytes']) if self.traffic_data['bytes'] else 1
-            
-            # Draw packets line
-            points = []
-            for i, (t, p) in enumerate(zip(self.traffic_data['time'], self.traffic_data['packets'])):
-                x = i * (600 / len(self.traffic_data['time']))
-                y = 200 - (p * 200 / max_packets)
-                points.extend([x, y])
-            
-            if points:
-                self.traffic_canvas.create_line(points, fill='blue', width=2)
-            
-            # Draw bytes line
-            points = []
-            for i, (t, b) in enumerate(zip(self.traffic_data['time'], self.traffic_data['bytes'])):
-                x = i * (600 / len(self.traffic_data['time']))
-                y = 200 - (b * 200 / max_bytes)
-                points.extend([x, y])
-            
-            if points:
-                self.traffic_canvas.create_line(points, fill='red', width=2)
-        
-        self.after(1000, self.update_traffic_graph)
+        # Auto-refresh toggle
+        self.auto_refresh_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(button_frame, text="Auto Refresh", variable=self.auto_refresh_var).pack(side=tk.LEFT, padx=5)
 
-    def update_traffic_stats(self):
-        """Update traffic statistics"""
+        # Start auto-refresh
+        self.auto_refresh_logs()
+
+    def refresh_all_logs(self):
+        """Refresh all log displays"""
         try:
-            # Get current traffic stats
-            result = subprocess.run(['iptables', '-L', '-v', '-n'], capture_output=True, text=True)
-            lines = result.stdout.split('\n')
+            # Update Firewall Logs
+            firewall_logs = view_logs().split("\n\n=== ")[0]  # Get only firewall logs
+            self.firewall_log_text.config(state=tk.NORMAL)
+            self.firewall_log_text.delete(1.0, tk.END)
+            self.firewall_log_text.insert(tk.END, firewall_logs)
+            self.firewall_log_text.config(state=tk.DISABLED)
             
-            total_packets = 0
-            total_bytes = 0
-            active_connections = 0
+            # Update IPTables Logs
+            iptables_logs = show_iptables_logs()
+            self.iptables_log_text.config(state=tk.NORMAL)
+            self.iptables_log_text.delete(1.0, tk.END)
+            self.iptables_log_text.insert(tk.END, iptables_logs)
+            self.iptables_log_text.config(state=tk.DISABLED)
             
-            for line in lines:
-                if 'packets' in line:
-                    parts = line.split()
-                    if len(parts) >= 2:
-                        total_packets += int(parts[0])
-                        total_bytes += int(parts[1])
-            
-            # Get active connections
-            result = subprocess.run(['netstat', '-an'], capture_output=True, text=True)
-            active_connections = len([l for l in result.stdout.split('\n') if 'ESTABLISHED' in l])
-            
-            # Update labels
-            self.packets_label.config(text=f"Packets: {total_packets}")
-            self.bytes_label.config(text=f"Bytes: {total_bytes}")
-            self.connections_label.config(text=f"Active Connections: {active_connections}")
-            
-            # Update graph data
-            self.traffic_data['time'].append(time.time())
-            self.traffic_data['packets'].append(total_packets)
-            self.traffic_data['bytes'].append(total_bytes)
-            
-            # Keep only last 60 seconds
-            current_time = time.time()
-            self.traffic_data['time'] = [t for t in self.traffic_data['time'] if current_time - t <= 60]
-            self.traffic_data['packets'] = self.traffic_data['packets'][-len(self.traffic_data['time']):]
-            self.traffic_data['bytes'] = self.traffic_data['bytes'][-len(self.traffic_data['time']):]
+            # Update Alerts
+            alerts = get_live_alerts()
+            self.alerts_text.config(state=tk.NORMAL)
+            self.alerts_text.delete(1.0, tk.END)
+            for alert in alerts:
+                if "ERROR" in alert or "CRITICAL" in alert:
+                    self.alerts_text.insert(tk.END, f"❌ {alert}\n", "error")
+                elif "WARNING" in alert:
+                    self.alerts_text.insert(tk.END, f"⚠️ {alert}\n", "warning")
+                else:
+                    self.alerts_text.insert(tk.END, f"ℹ️ {alert}\n", "info")
+            self.alerts_text.config(state=tk.DISABLED)
             
         except Exception as e:
-            log_event(f"Error updating traffic stats: {str(e)}", "ERROR")
-        
-        self.after(1000, self.update_traffic_stats)
+            messagebox.showerror("Error", f"Failed to refresh logs: {str(e)}")
 
-    def export_logs(self):
-        """Export logs to a file"""
-        filename = filedialog.asksaveasfilename(
-            defaultextension=".log",
-            filetypes=[("Log files", "*.log"), ("All files", "*.*")]
-        )
-        if filename:
-            try:
-                with open(filename, 'w') as f:
-                    f.write("=== Firewall Logs ===\n")
-                    f.write(self.firewall_log_text.get("1.0", tk.END))
-                    f.write("\n=== Alerts ===\n")
-                    f.write(self.alerts_text.get("1.0", tk.END))
-                messagebox.showinfo("Success", "Logs exported successfully!")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to export logs: {str(e)}")
+    def auto_refresh_logs(self):
+        """Auto refresh logs and alerts every 5 seconds"""
+        if hasattr(self, 'firewall_log_text'):
+            self.refresh_logs()
+        if hasattr(self, 'alerts_text'):
+            self.refresh_alerts()
+        self.after(5000, self.auto_refresh_logs)
+
+    def refresh_logs(self):
+        """Refresh all log displays with formatting"""
+        try:
+            logs = view_logs()
+            sections = logs.split("\n\n=== ")
+            
+            # Update Firewall Logs
+            self.firewall_log_text.config(state=tk.NORMAL)
+            self.firewall_log_text.delete(1.0, tk.END)
+            self.firewall_log_text.insert(tk.END, sections[0])
+            self.firewall_log_text.config(state=tk.DISABLED)
+            
+            # Update IPTables Logs if available
+            if len(sections) > 2:
+                iptables_logs = sections[2]
+                self.iptables_log_text.config(state=tk.NORMAL)
+                self.iptables_log_text.delete(1.0, tk.END)
+                self.iptables_log_text.insert(tk.END, iptables_logs)
+                self.iptables_log_text.config(state=tk.DISABLED)
+        except Exception as e:
+            print(f"Error refreshing logs: {e}")
+
+    def refresh_alerts(self):
+        """Refresh alerts with color coding"""
+        alerts = get_live_alerts()
+        self.alerts_text.config(state=tk.NORMAL)
+        self.alerts_text.delete(1.0, tk.END)
+        
+        for alert in alerts:
+            if "ERROR" in alert or "CRITICAL" in alert:
+                self.alerts_text.insert(tk.END, f"❌ {alert}\n", "error")
+            elif "WARNING" in alert:
+                self.alerts_text.insert(tk.END, f"⚠️ {alert}\n", "warning")
+            else:
+                self.alerts_text.insert(tk.END, f"ℹ️ {alert}\n", "info")
+        
+        self.alerts_text.config(state=tk.DISABLED)
 
     def create_user_management_tab(self):
         tab = ttk.Frame(self.tabs)
@@ -435,29 +461,40 @@ class BaselFirewallGUI(tk.Tk):
         user_frame = ttk.LabelFrame(tab, text="Users")
         user_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-        self.users_listbox = tk.Listbox(user_frame, height=10)
-        self.users_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0,5), pady=5)
+        self.user_listbox = tk.Listbox(user_frame, height=10)
+        self.user_listbox.pack(
+            side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5), pady=5
+        )
 
         user_buttons = ttk.Frame(user_frame)
         user_buttons.pack(side=tk.LEFT, fill=tk.Y, pady=5)
 
-        ttk.Button(user_buttons, text="Add User", command=self.add_user_gui).pack(fill=tk.X, pady=2)
-        ttk.Button(user_buttons, text="Remove Selected User", command=self.remove_user_gui).pack(fill=tk.X, pady=2)
-        ttk.Button(user_buttons, text="Refresh User List", command=self.load_users).pack(fill=tk.X, pady=2)
+        ttk.Button(user_buttons, text="Add User", command=self.add_user_gui).pack(
+            fill=tk.X, pady=2
+        )
+        ttk.Button(
+            user_buttons, text="Remove Selected User", command=self.remove_user_gui
+        ).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            user_buttons, text="Refresh User List", command=self.load_users
+        ).pack(fill=tk.X, pady=2)
 
         self.load_users()
 
     def load_users(self):
-        self.users_listbox.delete(0, tk.END)
+        """Load user list into the listbox"""
+        self.user_listbox.delete(0, tk.END)
         users = list_users()
-        for user in users:
-            self.users_listbox.insert(tk.END, user)
+        for user_info in users:
+            self.user_listbox.insert(tk.END, f"{user_info['username']} ({user_info['role']})")
 
     def add_user_gui(self):
         username = simpledialog.askstring("Add User", "Enter new username:")
         if not username:
             return
-        password = simpledialog.askstring("Add User", f"Enter password for {username}:", show="*")
+        password = simpledialog.askstring(
+            "Add User", f"Enter password for {username}:", show="*"
+        )
         if not password:
             return
         role = simpledialog.askstring("Add User", "Enter role (admin/user):").lower()
@@ -465,27 +502,34 @@ class BaselFirewallGUI(tk.Tk):
             messagebox.showerror("Invalid Role", "Role must be 'admin' or 'user'.")
             return
         if add_user(username, password, role):
-            add_alert(f"Admin '{self.username}' added user '{username}' with role '{role}'", "INFO")
-            log_event(f"Admin '{self.username}' added user '{username}' with role '{role}'", "INFO")
+            add_alert(
+                f"Admin '{self.username}' added user '{username}' with role '{role}'",
+                "INFO",
+            )
+            log_event(
+                f"Admin '{self.username}' added user '{username}' with role '{role}'",
+                "INFO",
+            )
             messagebox.showinfo("Success", f"User '{username}' added.")
             self.load_users()
         else:
             messagebox.showerror("Error", "Failed to add user. User may already exist.")
 
     def remove_user_gui(self):
-        selection = self.users_listbox.curselection()
+        selection = self.user_listbox.curselection()
         if not selection:
             messagebox.showwarning("No Selection", "No user selected.")
             return
-        user = self.users_listbox.get(selection[0])
-        if user == self.username:
+        user_info = self.user_listbox.get(selection[0])
+        username = user_info.split("(")[0].strip()
+        if username == self.username:
             messagebox.showwarning("Action Denied", "You cannot remove yourself.")
             return
-        if messagebox.askyesno("Confirm", f"Remove user '{user}'?"):
-            if remove_user(user):
-                add_alert(f"Admin '{self.username}' removed user '{user}'", "WARNING")
-                log_event(f"Admin '{self.username}' removed user '{user}'", "WARNING")
-                messagebox.showinfo("Success", f"User '{user}' removed.")
+        if messagebox.askyesno("Confirm", f"Remove user '{username}'?"):
+            if remove_user(username):
+                add_alert(f"Admin '{self.username}' removed user '{username}'", "WARNING")
+                log_event(f"Admin '{self.username}' removed user '{username}'", "WARNING")
+                messagebox.showinfo("Success", f"User '{username}' removed.")
                 self.load_users()
             else:
                 messagebox.showerror("Error", "Failed to remove user.")
@@ -498,22 +542,34 @@ class BaselFirewallGUI(tk.Tk):
         backup_frame = ttk.LabelFrame(tab, text="Backup & Restore")
         backup_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        ttk.Button(backup_frame, text="Backup Configuration", command=self.backup_config).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(backup_frame, text="Restore Configuration", command=self.restore_config).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(
+            backup_frame, text="Backup Configuration", command=self.backup_config
+        ).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(
+            backup_frame, text="Restore Configuration", command=self.restore_config
+        ).pack(side=tk.LEFT, padx=5, pady=5)
 
         # Rule Templates
         templates_frame = ttk.LabelFrame(tab, text="Rule Templates")
         templates_frame.pack(fill=tk.X, padx=10, pady=5)
         
         self.template_listbox = tk.Listbox(templates_frame, height=5)
-        self.template_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.template_listbox.pack(
+            side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5
+        )
         
         template_buttons = ttk.Frame(templates_frame)
         template_buttons.pack(side=tk.LEFT, fill=tk.Y, pady=5)
         
-        ttk.Button(template_buttons, text="Add Template", command=self.add_template).pack(fill=tk.X, pady=2)
-        ttk.Button(template_buttons, text="Apply Template", command=self.apply_template).pack(fill=tk.X, pady=2)
-        ttk.Button(template_buttons, text="Delete Template", command=self.delete_template).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            template_buttons, text="Add Template", command=self.add_template
+        ).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            template_buttons, text="Apply Template", command=self.apply_template
+        ).pack(fill=tk.X, pady=2)
+        ttk.Button(
+            template_buttons, text="Delete Template", command=self.delete_template
+        ).pack(fill=tk.X, pady=2)
 
         # Load templates
         self.load_templates()
@@ -522,16 +578,18 @@ class BaselFirewallGUI(tk.Tk):
         """Backup current configuration"""
         filename = filedialog.asksaveasfilename(
             defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
         )
         if filename:
             try:
                 config = load_config()
-                with open(filename, 'w') as f:
+                with open(filename, "w") as f:
                     json.dump(config, f, indent=4)
                 messagebox.showinfo("Success", "Configuration backed up successfully!")
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to backup configuration: {str(e)}")
+                messagebox.showerror(
+                    "Error", f"Failed to backup configuration: {str(e)}"
+                )
 
     def restore_config(self):
         """Restore configuration from backup"""
@@ -540,19 +598,21 @@ class BaselFirewallGUI(tk.Tk):
         )
         if filename:
             try:
-                with open(filename, 'r') as f:
+                with open(filename, "r") as f:
                     config = json.load(f)
                 save_config(config)
                 messagebox.showinfo("Success", "Configuration restored successfully!")
                 self.refresh_all()
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to restore configuration: {str(e)}")
+                messagebox.showerror(
+                    "Error", f"Failed to restore configuration: {str(e)}"
+                )
 
     def load_templates(self):
         """Load rule templates"""
         self.template_listbox.delete(0, tk.END)
         try:
-            with open('config/templates.json', 'r') as f:
+            with open("config/templates.json", "r") as f:
                 templates = json.load(f)
                 for name in templates:
                     self.template_listbox.insert(tk.END, name)
@@ -567,7 +627,7 @@ class BaselFirewallGUI(tk.Tk):
             if rules:
                 try:
                     rules_json = json.loads(rules)
-                    with open('config/templates.json', 'r+') as f:
+                    with open("config/templates.json", "r+") as f:
                         templates = json.load(f)
                         templates[name] = rules_json
                         f.seek(0)
@@ -589,13 +649,15 @@ class BaselFirewallGUI(tk.Tk):
         
         template_name = self.template_listbox.get(selection[0])
         try:
-            with open('config/templates.json', 'r') as f:
+            with open("config/templates.json", "r") as f:
                 templates = json.load(f)
                 if template_name in templates:
                     config = load_config()
                     config.update(templates[template_name])
                     save_config(config)
-                    messagebox.showinfo("Success", f"Template '{template_name}' applied successfully!")
+                    messagebox.showinfo(
+                        "Success", f"Template '{template_name}' applied successfully!"
+                    )
                     self.refresh_all()
         except Exception as e:
             messagebox.showerror("Error", f"Failed to apply template: {str(e)}")
@@ -610,7 +672,7 @@ class BaselFirewallGUI(tk.Tk):
         template_name = self.template_listbox.get(selection[0])
         if messagebox.askyesno("Confirm", f"Delete template '{template_name}'?"):
             try:
-                with open('config/templates.json', 'r+') as f:
+                with open("config/templates.json", "r+") as f:
                     templates = json.load(f)
                     if template_name in templates:
                         del templates[template_name]
@@ -632,28 +694,15 @@ class BaselFirewallGUI(tk.Tk):
         self.refresh_logs()
         self.refresh_alerts()
 
-    def refresh_logs(self):
-        logs = view_logs()
-        self.firewall_log_text.config(state=tk.NORMAL)
-        self.firewall_log_text.delete(1.0, tk.END)
-        self.firewall_log_text.insert(tk.END, logs)
-        self.firewall_log_text.config(state=tk.DISABLED)
-
     def clear_logs_gui(self):
-        if messagebox.askyesno("Confirm Clear Logs", "Are you sure you want to clear all logs?"):
+        if messagebox.askyesno(
+            "Confirm Clear Logs", "Are you sure you want to clear all logs?"
+        ):
             clear_logs()
             add_alert(f"User '{self.username}' cleared logs.", "WARNING")
             log_event(f"User '{self.username}' cleared logs.", "WARNING")
             self.refresh_logs()
             messagebox.showinfo("Logs Cleared", "All logs have been cleared.")
-
-    def refresh_alerts(self):
-        alerts = get_live_alerts()
-        self.alerts_text.config(state=tk.NORMAL)
-        self.alerts_text.delete(1.0, tk.END)
-        for alert in alerts:
-            self.alerts_text.insert(tk.END, f"{alert}\n")
-        self.alerts_text.config(state=tk.DISABLED)
 
     def create_logout_button(self):
         btn = ttk.Button(self, text="Logout", command=self.logout)
@@ -675,7 +724,7 @@ class BaselFirewallGUI(tk.Tk):
 
     def auto_refresh_alerts(self):
         """Auto refresh alerts every second"""
-        if hasattr(self, 'alerts_text'):
+        if hasattr(self, "alerts_text"):
             self.refresh_alerts()
         self.after(1000, self.auto_refresh_alerts)
 
