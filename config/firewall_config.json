@@ -12,7 +12,7 @@
     "dos_protection_enabled": false,
     "ids_ips_enabled": false,
     "nat_enabled": false,
-    "stateful_enabled": false,
+    "stateful_enabled": true,
     "nat_config": {
         "external_interface": null,
         "internal_interface": null,
@@ -30,5 +30,14 @@
         "rate_limit": 100,
         "burst": 200,
         "connection_limit": 50
+    },
+    "stateful_config": {
+        "max_conn_per_ip": 100,
+        "conn_rate_limit": "50/s",
+        "icmp_rate_limit": "5/s",
+        "icmp_burst": "10",
+        "tcp_strict_mode": true,
+        "udp_timeout": 30,
+        "icmp_timeout": 5
     }
 }

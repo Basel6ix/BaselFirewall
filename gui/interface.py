@@ -1,29 +1,19 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog, scrolledtext
-from firewall.auth import (
-    authenticate,
-    is_admin,
-    add_user,
-    remove_user,
-    list_users,
-    log_login_attempt,
-)
+import json
+import os
+import time
+from firewall.config_manager import load_config, save_config, reset_config, set_nat_config
 from firewall.rules import allow_ip, remove_allowed_ip, block_port, remove_blocked_port
-from firewall.config_manager import (
-    load_config,
-    reset_config,
-    set_nat_config,
-    save_config,
-)
-from firewall.ids_ips import enable_ids_ips, disable_ids_ips
 from firewall.stateful import enable_stateful_inspection, disable_stateful_inspection
+from firewall.ids_ips import enable_ids_ips, disable_ids_ips
 from firewall.nat import enable_nat, disable_nat
 from firewall.dos import enable_dos_protection, disable_dos_protection
-from firewall.logging import log_event, view_logs, clear_logs
+from firewall.logging import log_event, view_logs, clear_logs, show_iptables_logs
 from firewall.alerts import add_alert, get_live_alerts
-import json
+from firewall.auth import add_user, remove_user, list_users, is_admin, authenticate, log_login_attempt
+from colorama import init, Fore, Style
 import subprocess
-import time
 
 
 class LoginDialog(simpledialog.Dialog):
@@ -38,57 +28,87 @@ class LoginDialog(simpledialog.Dialog):
         return self.username_entry
 
     def apply(self):
-        self.username = self.username_entry.get().strip()
-        self.password = self.password_entry.get().strip()
+        self.result = (self.username_entry.get().strip(), self.password_entry.get().strip())
+
+    def validate(self):
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get().strip()
+        if not username or not password:
+            messagebox.showerror("Error", "Username and password are required.")
+            return False
+        return True
 
 
 class BaselFirewallGUI(tk.Tk):
     def __init__(self):
+        """Initialize the GUI"""
         super().__init__()
-        self.title("BaselFirewall GUI")
-        self.geometry("1024x768")
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Configure text tags for alerts
-        self.style = ttk.Style()
-        self.style.configure("Error.TLabel", foreground="red")
-        self.style.configure("Warning.TLabel", foreground="orange")
-        self.style.configure("Info.TLabel", foreground="blue")
-
+        # Initialize variables
         self.username = None
         self.admin = False
+        self.auto_refresh_alerts_id = None
+        self.auto_refresh_logs_id = None
+        self.quit_flag = False
         
-        # Add auto-refresh for alerts
-        self.after(1000, self.auto_refresh_alerts)
+        # Initialize auto-refresh variables
+        self.firewall_auto_refresh = tk.BooleanVar(value=True)
+        self.iptables_auto_refresh = tk.BooleanVar(value=True)
+        self.alerts_auto_refresh = tk.BooleanVar(value=True)
 
-        self.login()
+        # Configure window
+        self.title("Basel Firewall")
+        self.geometry("800x600")
+        self.minsize(800, 600)
+
+        # Configure styles
+        style = ttk.Style()
+        style.configure("Accent.TButton", 
+                       background="#007bff",
+                       foreground="white",
+                       padding=5)
+
+        # Attempt login
+        if not self.login():
+            self.destroy()
+            return
+
+        # Build interface
+        self.build_interface()
+        
+        # Start auto-refresh
+        self.start_auto_refresh()
 
     def login(self):
+        """Handle user login"""
         while True:
-            dlg = LoginDialog(self)
-            username = getattr(dlg, "username", None)
-            password = getattr(dlg, "password", None)
+            dialog = LoginDialog(self)
+            if not dialog.result:
+                self.destroy()
+                return False
+
+            username, password = dialog.result
             if not username or not password:
                 self.destroy()
-                return
+                return False
+
             if authenticate(username, password):
                 log_login_attempt(username, True)
-                add_alert(f"User '{username}' logged in via GUI", "INFO")
-                log_event(f"User '{username}' logged in via GUI", "INFO")
                 self.username = username
                 self.admin = is_admin(username)
                 messagebox.showinfo("Login Successful", f"Welcome, {username}!")
-                break
+                return True
             else:
                 log_login_attempt(username, False)
                 messagebox.showerror("Login Failed", "Invalid username or password.")
 
-        self.build_interface()
-
     def build_interface(self):
+        """Build the main interface"""
+        # Create notebook for tabs
         self.tabs = ttk.Notebook(self)
-        self.tabs.pack(fill=tk.BOTH, expand=True)
+        self.tabs.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
+        # Create tabs
         self.create_firewall_rules_tab()
         self.create_features_tab()
         self.create_logs_tab()
@@ -96,7 +116,14 @@ class BaselFirewallGUI(tk.Tk):
             self.create_user_management_tab()
             self.create_configuration_tab()
 
+        # Create logout button
         self.create_logout_button()
+
+        # Log successful login
+        log_event(f"User '{self.username}' logged in via GUI", "INFO")
+
+        # Set up window close handler
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def create_firewall_rules_tab(self):
         tab = ttk.Frame(self.tabs)
@@ -331,128 +358,168 @@ class BaselFirewallGUI(tk.Tk):
             messagebox.showinfo("DoS Protection", "DoS Protection disabled.")
 
     def create_logs_tab(self):
-        """Create the logs tab with real-time updates"""
+        """Create the logs tab"""
         tab = ttk.Frame(self.tabs)
         self.tabs.add(tab, text="Logs & Alerts")
 
-        # Create a notebook for different log types
+        # Create notebook for log tabs
         log_notebook = ttk.Notebook(tab)
         log_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Firewall Logs
-        firewall_frame = ttk.Frame(log_notebook)
-        log_notebook.add(firewall_frame, text="Firewall Logs")
+        # Firewall Logs Tab
+        firewall_tab = ttk.Frame(log_notebook)
+        log_notebook.add(firewall_tab, text="Firewall Logs")
         
-        self.firewall_log_text = scrolledtext.ScrolledText(firewall_frame, height=20, wrap=tk.WORD)
+        # Control frame for firewall logs
+        firewall_control_frame = ttk.Frame(firewall_tab)
+        firewall_control_frame.pack(fill=tk.X, padx=5, pady=2)
+        
+        ttk.Checkbutton(
+            firewall_control_frame,
+            text="Auto Refresh",
+            variable=self.firewall_auto_refresh
+        ).pack(side=tk.LEFT)
+        
+        ttk.Button(
+            firewall_control_frame,
+            text="Refresh Now",
+            command=self.refresh_logs
+        ).pack(side=tk.LEFT, padx=5)
+
+        self.firewall_log_text = scrolledtext.ScrolledText(firewall_tab, height=20)
         self.firewall_log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.firewall_log_text.tag_configure("INFO", foreground="black")
+        self.firewall_log_text.tag_configure("WARNING", foreground="orange")
+        self.firewall_log_text.tag_configure("ERROR", foreground="red")
+        self.firewall_log_text.tag_configure("CRITICAL", foreground="red", font=("TkDefaultFont", 10, "bold"))
 
-        # IPTables Logs
-        iptables_frame = ttk.Frame(log_notebook)
-        log_notebook.add(iptables_frame, text="IPTables Logs")
+        # IPTables Logs Tab
+        iptables_tab = ttk.Frame(log_notebook)
+        log_notebook.add(iptables_tab, text="IPTables Logs")
         
-        self.iptables_log_text = scrolledtext.ScrolledText(iptables_frame, height=20, wrap=tk.WORD)
-        self.iptables_log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Control frame for iptables logs
+        iptables_control_frame = ttk.Frame(iptables_tab)
+        iptables_control_frame.pack(fill=tk.X, padx=5, pady=2)
         
-        # Live Alerts
-        alerts_frame = ttk.Frame(log_notebook)
-        log_notebook.add(alerts_frame, text="Live Alerts")
+        ttk.Checkbutton(
+            iptables_control_frame,
+            text="Auto Refresh",
+            variable=self.iptables_auto_refresh
+        ).pack(side=tk.LEFT)
         
-        self.alerts_text = scrolledtext.ScrolledText(alerts_frame, height=20, wrap=tk.WORD)
+        ttk.Button(
+            iptables_control_frame,
+            text="Refresh Now",
+            command=self.refresh_iptables
+        ).pack(side=tk.LEFT, padx=5)
+
+        self.iptables_text = scrolledtext.ScrolledText(iptables_tab, height=20)
+        self.iptables_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.iptables_text.tag_configure("DROP", foreground="red")
+        self.iptables_text.tag_configure("ACCEPT", foreground="green")
+        self.iptables_text.tag_configure("NEW", foreground="blue")
+
+        # Live Alerts Tab
+        alerts_tab = ttk.Frame(log_notebook)
+        log_notebook.add(alerts_tab, text="Live Alerts")
+        
+        # Control frame for alerts
+        alerts_control_frame = ttk.Frame(alerts_tab)
+        alerts_control_frame.pack(fill=tk.X, padx=5, pady=2)
+        
+        ttk.Checkbutton(
+            alerts_control_frame,
+            text="Auto Refresh",
+            variable=self.alerts_auto_refresh
+        ).pack(side=tk.LEFT)
+        
+        ttk.Button(
+            alerts_control_frame,
+            text="Refresh Now",
+            command=self.refresh_alerts
+        ).pack(side=tk.LEFT, padx=5)
+
+        self.alerts_text = scrolledtext.ScrolledText(alerts_tab, height=20)
         self.alerts_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        # Control buttons
-        button_frame = ttk.Frame(tab)
-        button_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        ttk.Button(button_frame, text="Clear Logs", command=self.clear_logs_gui).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Export Logs", command=self.export_logs).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Refresh", command=self.refresh_all_logs).pack(side=tk.LEFT, padx=5)
-        
-        # Auto-refresh toggle
-        self.auto_refresh_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(button_frame, text="Auto Refresh", variable=self.auto_refresh_var).pack(side=tk.LEFT, padx=5)
-
-        # Start auto-refresh
-        self.auto_refresh_logs()
-
-    def refresh_all_logs(self):
-        """Refresh all log displays"""
-        try:
-            # Update Firewall Logs
-            firewall_logs = view_logs().split("\n\n=== ")[0]  # Get only firewall logs
-            self.firewall_log_text.config(state=tk.NORMAL)
-            self.firewall_log_text.delete(1.0, tk.END)
-            self.firewall_log_text.insert(tk.END, firewall_logs)
-            self.firewall_log_text.config(state=tk.DISABLED)
-            
-            # Update IPTables Logs
-            iptables_logs = show_iptables_logs()
-            self.iptables_log_text.config(state=tk.NORMAL)
-            self.iptables_log_text.delete(1.0, tk.END)
-            self.iptables_log_text.insert(tk.END, iptables_logs)
-            self.iptables_log_text.config(state=tk.DISABLED)
-            
-            # Update Alerts
-            alerts = get_live_alerts()
-            self.alerts_text.config(state=tk.NORMAL)
-            self.alerts_text.delete(1.0, tk.END)
-            for alert in alerts:
-                if "ERROR" in alert or "CRITICAL" in alert:
-                    self.alerts_text.insert(tk.END, f"❌ {alert}\n", "error")
-                elif "WARNING" in alert:
-                    self.alerts_text.insert(tk.END, f"⚠️ {alert}\n", "warning")
-                else:
-                    self.alerts_text.insert(tk.END, f"ℹ️ {alert}\n", "info")
-            self.alerts_text.config(state=tk.DISABLED)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to refresh logs: {str(e)}")
-
-    def auto_refresh_logs(self):
-        """Auto refresh logs and alerts every 5 seconds"""
-        if hasattr(self, 'firewall_log_text'):
-            self.refresh_logs()
-        if hasattr(self, 'alerts_text'):
-            self.refresh_alerts()
-        self.after(5000, self.auto_refresh_logs)
-
-    def refresh_logs(self):
-        """Refresh all log displays with formatting"""
-        try:
-            logs = view_logs()
-            sections = logs.split("\n\n=== ")
-            
-            # Update Firewall Logs
-            self.firewall_log_text.config(state=tk.NORMAL)
-            self.firewall_log_text.delete(1.0, tk.END)
-            self.firewall_log_text.insert(tk.END, sections[0])
-            self.firewall_log_text.config(state=tk.DISABLED)
-            
-            # Update IPTables Logs if available
-            if len(sections) > 2:
-                iptables_logs = sections[2]
-                self.iptables_log_text.config(state=tk.NORMAL)
-                self.iptables_log_text.delete(1.0, tk.END)
-                self.iptables_log_text.insert(tk.END, iptables_logs)
-                self.iptables_log_text.config(state=tk.DISABLED)
-        except Exception as e:
-            print(f"Error refreshing logs: {e}")
-
-    def refresh_alerts(self):
-        """Refresh alerts with color coding"""
-        alerts = get_live_alerts()
-        self.alerts_text.config(state=tk.NORMAL)
-        self.alerts_text.delete(1.0, tk.END)
-        
-        for alert in alerts:
-            if "ERROR" in alert or "CRITICAL" in alert:
-                self.alerts_text.insert(tk.END, f"❌ {alert}\n", "error")
-            elif "WARNING" in alert:
-                self.alerts_text.insert(tk.END, f"⚠️ {alert}\n", "warning")
-            else:
-                self.alerts_text.insert(tk.END, f"ℹ️ {alert}\n", "info")
-        
+        self.alerts_text.tag_configure("INFO", foreground="black")
+        self.alerts_text.tag_configure("WARNING", foreground="orange")
+        self.alerts_text.tag_configure("ERROR", foreground="red")
+        self.alerts_text.tag_configure("CRITICAL", foreground="red", font=("TkDefaultFont", 10, "bold"))
         self.alerts_text.config(state=tk.DISABLED)
+
+        # Buttons frame
+        buttons_frame = ttk.Frame(tab)
+        buttons_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        ttk.Button(
+            buttons_frame, text="Clear Logs", command=self.clear_logs_gui
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            buttons_frame, text="Export Logs", command=self.export_logs
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            buttons_frame, text="Import Logs", command=self.import_logs
+        ).pack(side=tk.LEFT, padx=5)
+
+    def start_auto_refresh(self):
+        """Start auto-refresh for logs and alerts"""
+        self.refresh_all_logs()  # Initial refresh
+        self.schedule_auto_refresh()
+
+    def schedule_auto_refresh(self):
+        """Schedule the next auto-refresh"""
+        if not self.quit_flag:
+            if self.firewall_auto_refresh.get():
+                self.refresh_logs()
+            if self.iptables_auto_refresh.get():
+                self.refresh_iptables()
+            if self.alerts_auto_refresh.get():
+                self.refresh_alerts()
+            # Schedule next refresh in 5 seconds
+            self.after(5000, self.schedule_auto_refresh)
+
+    def create_logout_button(self):
+        """Create the logout button"""
+        # Create a frame at the top of the window
+        logout_frame = ttk.Frame(self)
+        logout_frame.pack(fill=tk.X, padx=10, pady=5, before=self.tabs)
+        
+        # Add username label with distinct styling
+        username_label = ttk.Label(
+            logout_frame,
+            text=f"Logged in as: {self.username}",
+            font=("TkDefaultFont", 10, "bold")
+        )
+        username_label.pack(side=tk.LEFT, padx=5)
+        
+        # Create a logout button with default style
+        logout_button = ttk.Button(
+            logout_frame,
+            text="Logout",
+            command=self.logout
+        )
+        logout_button.pack(side=tk.RIGHT, padx=5)
+        
+        # Add separator below the logout frame
+        separator = ttk.Separator(self, orient='horizontal')
+        separator.pack(fill=tk.X, padx=5, pady=2, before=self.tabs)
+
+    def logout(self):
+        """Handle user logout"""
+        if messagebox.askyesno("Confirm Logout", "Are you sure you want to logout?"):
+            self.quit_flag = True  # Stop auto-refresh
+            log_event(f"User '{self.username}' logged out", "INFO")
+            self.destroy()
+            main()  # Restart the application
+
+    def on_close(self):
+        """Handle window close"""
+        if messagebox.askyesno("Confirm Exit", "Are you sure you want to exit?"):
+            self.quit_flag = True  # Stop auto-refresh
+            log_event(f"User '{self.username}' exited application", "INFO")
+            self.destroy()
 
     def create_user_management_tab(self):
         tab = ttk.Frame(self.tabs)
@@ -486,7 +553,9 @@ class BaselFirewallGUI(tk.Tk):
         self.user_listbox.delete(0, tk.END)
         users = list_users()
         for user_info in users:
-            self.user_listbox.insert(tk.END, f"{user_info['username']} ({user_info['role']})")
+            self.user_listbox.insert(
+                tk.END, f"{user_info['username']} ({user_info['role']})"
+            )
 
     def add_user_gui(self):
         username = simpledialog.askstring("Add User", "Enter new username:")
@@ -527,8 +596,12 @@ class BaselFirewallGUI(tk.Tk):
             return
         if messagebox.askyesno("Confirm", f"Remove user '{username}'?"):
             if remove_user(username):
-                add_alert(f"Admin '{self.username}' removed user '{username}'", "WARNING")
-                log_event(f"Admin '{self.username}' removed user '{username}'", "WARNING")
+                add_alert(
+                    f"Admin '{self.username}' removed user '{username}'", "WARNING"
+                )
+                log_event(
+                    f"Admin '{self.username}' removed user '{username}'", "WARNING"
+                )
                 messagebox.showinfo("Success", f"User '{username}' removed.")
                 self.load_users()
             else:
@@ -693,42 +766,185 @@ class BaselFirewallGUI(tk.Tk):
         self.load_templates()
         self.refresh_logs()
         self.refresh_alerts()
+        self.refresh_iptables()
+
+    def refresh_logs(self):
+        """Refresh firewall logs"""
+        try:
+        logs = view_logs()
+        self.firewall_log_text.delete(1.0, tk.END)
+            
+            # Filter out alert messages and apply styling
+            for line in logs.split('\n'):
+                if line and "ALERT:" not in line:  # Skip alert messages
+                    if "ERROR" in line:
+                        self.firewall_log_text.insert(tk.END, line + '\n', "ERROR")
+                    elif "WARNING" in line:
+                        self.firewall_log_text.insert(tk.END, line + '\n', "WARNING")
+                    elif "CRITICAL" in line:
+                        self.firewall_log_text.insert(tk.END, line + '\n', "CRITICAL")
+                    else:
+                        self.firewall_log_text.insert(tk.END, line + '\n', "INFO")
+            
+            self.firewall_log_text.see(tk.END)
+        except Exception as e:
+            log_event(f"Error refreshing firewall logs: {str(e)}", "ERROR")
+
+    def refresh_iptables(self):
+        """Refresh iptables logs"""
+        try:
+            logs = show_iptables_logs()
+            self.iptables_text.delete(1.0, tk.END)
+            
+            # Apply styling based on log content
+            for line in logs.split('\n'):
+                if line:
+                    if "DROP" in line:
+                        self.iptables_text.insert(tk.END, line + '\n', "DROP")
+                    elif "ACCEPT" in line:
+                        self.iptables_text.insert(tk.END, line + '\n', "ACCEPT")
+                    elif "NEW_CONNECTION" in line:
+                        self.iptables_text.insert(tk.END, line + '\n', "NEW")
+                    else:
+                        self.iptables_text.insert(tk.END, line + '\n')
+            
+            self.iptables_text.see(tk.END)
+        except Exception as e:
+            log_event(f"Error refreshing iptables logs: {str(e)}", "ERROR")
+
+    def refresh_alerts(self):
+        """Refresh live alerts"""
+        try:
+            alerts = get_live_alerts()  # This returns a list of dictionaries
+        self.alerts_text.config(state=tk.NORMAL)
+        self.alerts_text.delete(1.0, tk.END)
+            
+        for alert in alerts:
+                if isinstance(alert, dict):
+                    message = alert.get('message', '')
+                    level = alert.get('level', 'INFO')
+                    timestamp = alert.get('timestamp', '')
+                    
+                    # Convert timestamp to human-readable format
+                    if timestamp:
+                        try:
+                            timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(float(timestamp)))
+                        except (ValueError, TypeError):
+                            timestamp = 'Unknown Time'
+                    
+                    alert_line = f"[{timestamp}] [{level}] {message}\n"
+                    
+                    if level == "ERROR":
+                        self.alerts_text.insert(tk.END, alert_line, "ERROR")
+                    elif level == "WARNING":
+                        self.alerts_text.insert(tk.END, alert_line, "WARNING")
+                    elif level == "CRITICAL":
+                        self.alerts_text.insert(tk.END, alert_line, "CRITICAL")
+                    else:
+                        self.alerts_text.insert(tk.END, alert_line, "INFO")
+            
+            self.alerts_text.see(tk.END)
+            self.alerts_text.config(state=tk.DISABLED)
+        except Exception as e:
+            log_event(f"Error refreshing alerts: {str(e)}", "ERROR")
+
+    def refresh_all_logs(self):
+        """Refresh all logs and alerts"""
+        self.refresh_logs()
+        self.refresh_iptables()
+            self.refresh_alerts()
 
     def clear_logs_gui(self):
-        if messagebox.askyesno(
-            "Confirm Clear Logs", "Are you sure you want to clear all logs?"
-        ):
-            clear_logs()
-            add_alert(f"User '{self.username}' cleared logs.", "WARNING")
-            log_event(f"User '{self.username}' cleared logs.", "WARNING")
-            self.refresh_logs()
-            messagebox.showinfo("Logs Cleared", "All logs have been cleared.")
+        """Clear all logs"""
+        try:
+            result = clear_logs()
+            if result == "[+] All logs cleared.":
+                # Clear the text widgets
+                self.firewall_log_text.delete(1.0, tk.END)
+                self.iptables_text.delete(1.0, tk.END)
+                self.alerts_text.config(state=tk.NORMAL)
+                self.alerts_text.delete(1.0, tk.END)
+                self.alerts_text.config(state=tk.DISABLED)
+                
+                add_alert("Logs cleared by user", "INFO")
+                log_event("Logs cleared by user", "INFO")
+                messagebox.showinfo("Success", "All logs cleared successfully!")
+            else:
+                messagebox.showerror("Error", f"Failed to clear logs: {result}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to clear logs: {str(e)}")
+            log_event(f"Error clearing logs: {str(e)}", "ERROR")
 
-    def create_logout_button(self):
-        btn = ttk.Button(self, text="Logout", command=self.logout)
-        btn.pack(side=tk.BOTTOM, pady=5)
+    def export_logs(self):
+        """Export logs to a file"""
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+        )
+        if filename:
+            try:
+                # Get all logs
+                firewall_logs = view_logs()
+                iptables_logs = show_iptables_logs()
+                alerts = get_live_alerts()
 
-    def logout(self):
-        if messagebox.askyesno("Confirm Logout", "Are you sure you want to logout?"):
-            add_alert(f"User '{self.username}' logged out via GUI", "INFO")
-            log_event(f"User '{self.username}' logged out via GUI", "INFO")
-            self.destroy()
-            self.__init__()
+                # Write to file
+                with open(filename, "w") as f:
+                    f.write("=== Firewall Logs ===\n")
+                    f.write(firewall_logs)
+                    f.write("\n\n=== IPTables Logs ===\n")
+                    f.write(iptables_logs)
+                    f.write("\n\n=== Live Alerts ===\n")
+                    f.write("\n".join(alerts))
 
-    def on_close(self):
-        if messagebox.askyesno("Exit BaselFirewall", "Are you sure you want to exit?"):
-            if self.username:
-                add_alert(f"User '{self.username}' exited BaselFirewall GUI", "INFO")
-                log_event(f"User '{self.username}' exited BaselFirewall GUI", "INFO")
-            self.destroy()
+                messagebox.showinfo("Success", "Logs exported successfully!")
+                add_alert(f"Logs exported to {filename}", "INFO")
+                log_event(f"Logs exported to {filename}", "INFO")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to export logs: {str(e)}")
 
-    def auto_refresh_alerts(self):
-        """Auto refresh alerts every second"""
-        if hasattr(self, "alerts_text"):
-            self.refresh_alerts()
-        self.after(1000, self.auto_refresh_alerts)
+    def import_logs(self):
+        """Import logs from a file"""
+        try:
+            filename = filedialog.askopenfilename(
+                title="Import Logs",
+                filetypes=[("Log files", "*.log"), ("Text files", "*.txt"), ("All files", "*.*")]
+            )
+            if filename:
+                with open(filename, 'r') as f:
+                    content = f.read()
+                    # Parse the imported logs
+                    sections = content.split("\n=== ")
+                    for section in sections:
+                        if section.startswith("Firewall Logs"):
+                            self.firewall_log_text.delete(1.0, tk.END)
+                            for line in section.split('\n')[1:]:  # Skip the header
+                                if line.strip():
+                                    self.firewall_log_text.insert(tk.END, line + '\n')
+                        elif section.startswith("IPTables Logs"):
+                            self.iptables_text.delete(1.0, tk.END)
+                            for line in section.split('\n')[1:]:  # Skip the header
+                                if line.strip():
+                                    self.iptables_text.insert(tk.END, line + '\n')
+                        elif section.startswith("Live Alerts"):
+                            self.alerts_text.config(state=tk.NORMAL)
+                            self.alerts_text.delete(1.0, tk.END)
+                            for line in section.split('\n')[1:]:  # Skip the header
+                                if line.strip():
+                                    self.alerts_text.insert(tk.END, line + '\n')
+                            self.alerts_text.config(state=tk.DISABLED)
+                    
+                    log_event(f"Imported logs from {filename}", "INFO")
+                    messagebox.showinfo("Success", "Logs imported successfully")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import logs: {e}")
+            log_event(f"Failed to import logs: {e}", "ERROR")
 
 
-if __name__ == "__main__":
+def main():
+    """Initialize and run the GUI"""
     app = BaselFirewallGUI()
     app.mainloop()
+
+if __name__ == "__main__":
+    main()

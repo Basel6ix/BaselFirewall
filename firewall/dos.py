@@ -2,7 +2,12 @@ import os
 import subprocess
 from collections import defaultdict
 from firewall.logging import log_event
-from .config_manager import set_feature_state, get_feature_state, load_config, save_config
+from .config_manager import (
+    set_feature_state,
+    get_feature_state,
+    load_config,
+    save_config,
+)
 import time
 import logging
 from scapy.all import IP, TCP, UDP, ICMP
@@ -62,60 +67,61 @@ def detect_syn_flood(packet):
         src_ip = packet.get("src")
         now = time.time()
         counts = read_connection_log()
-        
+
         if src_ip not in counts:
             counts[src_ip] = {
-                'syn_count': 0,
-                'last_syn': 0,
-                'alert_sent': False,
-                'first_syn': now
+                "syn_count": 0,
+                "last_syn": 0,
+                "alert_sent": False,
+                "first_syn": now,
             }
-        
+
         data = counts[src_ip]
-        
+
         # Reset counter if more than 1 second has passed
-        if now - data['last_syn'] > 1:
-            data['syn_count'] = 0
-            data['first_syn'] = now
-            data['alert_sent'] = False
-        
-        data['syn_count'] += 1
-        data['last_syn'] = now
-        
+        if now - data["last_syn"] > 1:
+            data["syn_count"] = 0
+            data["first_syn"] = now
+            data["alert_sent"] = False
+
+        data["syn_count"] += 1
+        data["last_syn"] = now
+
         # Calculate rate
-        duration = now - data['first_syn']
+        duration = now - data["first_syn"]
         if duration > 0:
-            rate = data['syn_count'] / duration
-            
+            rate = data["syn_count"] / duration
+
             # Alert if rate exceeds threshold (typical for hping3 --flood)
-            if rate > 100 and not data['alert_sent']:  # More than 100 SYN/s
+            if rate > 100 and not data["alert_sent"]:  # More than 100 SYN/s
                 message = (
                     f"ALERT: SYN flood attack detected from {src_ip} "
                     f"(Rate: {rate:.1f} SYN/s)"
                 )
                 log_event(message, "WARNING")
                 add_alert(message, "WARNING")
-                data['alert_sent'] = True
-                
+                data["alert_sent"] = True
+
                 # Add temporary block
                 try:
-                    subprocess.run([
-                        "iptables", "-A", "INPUT",
-                        "-s", src_ip,
-                        "-j", "DROP"
-                    ], check=True)
-                    
+                    subprocess.run(
+                        ["iptables", "-A", "INPUT", "-s", src_ip, "-j", "DROP"],
+                        check=True,
+                    )
+
                     # Remove block after 5 minutes
                     unblock_cmd = f"iptables -D INPUT -s {src_ip} -j DROP"
-                    subprocess.run([
-                        "at", "now", "+", "5", "minutes"
-                    ], input=unblock_cmd.encode(), check=True)
-                    
+                    subprocess.run(
+                        ["at", "now", "+", "5", "minutes"],
+                        input=unblock_cmd.encode(),
+                        check=True,
+                    )
+
                 except subprocess.CalledProcessError as e:
                     log_event(f"Failed to block SYN flood attacker: {e}", "ERROR")
-                
+
                 return True
-        
+
         write_connection_log(counts)
     return False
 
@@ -128,61 +134,71 @@ def detect_icmp_flood(packet):
         src_ip = packet.get("src")
         now = time.time()
         counts = read_connection_log()
-        
+
         if src_ip not in counts:
             counts[src_ip] = {
-                'icmp_count': 0,
-                'last_icmp': 0,
-                'alert_sent': False,
-                'first_icmp': now
+                "icmp_count": 0,
+                "last_icmp": 0,
+                "alert_sent": False,
+                "first_icmp": now,
             }
-        
+
         data = counts[src_ip]
-        
+
         # Reset counter if more than 1 second has passed
-        if now - data['last_icmp'] > 1:
-            data['icmp_count'] = 0
-            data['first_icmp'] = now
-            data['alert_sent'] = False
-        
-        data['icmp_count'] += 1
-        data['last_icmp'] = now
-        
+        if now - data["last_icmp"] > 1:
+            data["icmp_count"] = 0
+            data["first_icmp"] = now
+            data["alert_sent"] = False
+
+        data["icmp_count"] += 1
+        data["last_icmp"] = now
+
         # Calculate rate
-        duration = now - data['first_icmp']
+        duration = now - data["first_icmp"]
         if duration > 0:
-            rate = data['icmp_count'] / duration
-            
+            rate = data["icmp_count"] / duration
+
             # Alert if rate exceeds threshold (100 packets per second)
-            if rate > 100 and not data['alert_sent']:
+            if rate > 100 and not data["alert_sent"]:
                 message = (
                     f"ALERT: ICMP flood attack detected from {src_ip} "
                     f"(Rate: {rate:.1f} packets/s)"
                 )
                 log_event(message, "WARNING")
                 add_alert(message, "WARNING")
-                data['alert_sent'] = True
-                
+                data["alert_sent"] = True
+
                 # Add temporary block
                 try:
-                    subprocess.run([
-                        "iptables", "-A", "INPUT",
-                        "-p", "icmp",
-                        "-s", src_ip,
-                        "-j", "DROP"
-                    ], check=True)
-                    
+                    subprocess.run(
+                        [
+                            "iptables",
+                            "-A",
+                            "INPUT",
+                            "-p",
+                            "icmp",
+                            "-s",
+                            src_ip,
+                            "-j",
+                            "DROP",
+                        ],
+                        check=True,
+                    )
+
                     # Remove block after 5 minutes
                     unblock_cmd = f"iptables -D INPUT -p icmp -s {src_ip} -j DROP"
-                    subprocess.run([
-                        "at", "now", "+", "5", "minutes"
-                    ], input=unblock_cmd.encode(), check=True)
-                    
+                    subprocess.run(
+                        ["at", "now", "+", "5", "minutes"],
+                        input=unblock_cmd.encode(),
+                        check=True,
+                    )
+
                 except subprocess.CalledProcessError as e:
                     log_event(f"Failed to block ICMP flood attacker: {e}", "ERROR")
-                
+
                 return True
-        
+
         write_connection_log(counts)
     return False
 
@@ -212,46 +228,82 @@ def protect_against_syn_flood():
     Enhanced protection against SYN flood attacks (especially hping3)
     """
     # SYN flood protection with strict rate limiting
-    subprocess.call([
-        "iptables", "-A", "INPUT", "-p", "tcp", "--syn",
-        "-m", "hashlimit",
-        "--hashlimit-name", "synflood",
-        "--hashlimit-above", "100/s",
-        "--hashlimit-burst", "20",
-        "--hashlimit-mode", "srcip",
-        "--hashlimit-htable-expire", "300000",
-        "-j", "DROP"
-    ])
-    
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-p",
+            "tcp",
+            "--syn",
+            "-m",
+            "hashlimit",
+            "--hashlimit-name",
+            "synflood",
+            "--hashlimit-above",
+            "100/s",
+            "--hashlimit-burst",
+            "20",
+            "--hashlimit-mode",
+            "srcip",
+            "--hashlimit-htable-expire",
+            "300000",
+            "-j",
+            "DROP",
+        ]
+    )
+
     # Add connection tracking limits
-    subprocess.call([
-        "iptables", "-A", "INPUT", "-p", "tcp",
-        "-m", "conntrack",
-        "--ctstate", "NEW",
-        "-m", "limit",
-        "--limit", "60/s",
-        "-j", "ACCEPT"
-    ])
-    
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-p",
+            "tcp",
+            "-m",
+            "conntrack",
+            "--ctstate",
+            "NEW",
+            "-m",
+            "limit",
+            "--limit",
+            "60/s",
+            "-j",
+            "ACCEPT",
+        ]
+    )
+
     # Drop invalid packets
-    subprocess.call([
-        "iptables", "-A", "INPUT",
-        "-m", "state",
-        "--state", "INVALID",
-        "-j", "DROP"
-    ])
-    
+    subprocess.call(
+        ["iptables", "-A", "INPUT", "-m", "state", "--state", "INVALID", "-j", "DROP"]
+    )
+
     # Log SYN flood attempts
-    subprocess.call([
-        "iptables", "-A", "INPUT", "-p", "tcp", "--syn",
-        "-m", "hashlimit",
-        "--hashlimit-name", "synfloodlog",
-        "--hashlimit-above", "100/s",
-        "--hashlimit-burst", "20",
-        "--hashlimit-mode", "srcip",
-        "-j", "LOG",
-        "--log-prefix", "SYN_FLOOD: "
-    ])
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-p",
+            "tcp",
+            "--syn",
+            "-m",
+            "hashlimit",
+            "--hashlimit-name",
+            "synfloodlog",
+            "--hashlimit-above",
+            "100/s",
+            "--hashlimit-burst",
+            "20",
+            "--hashlimit-mode",
+            "srcip",
+            "-j",
+            "LOG",
+            "--log-prefix",
+            "SYN_FLOOD: ",
+        ]
+    )
 
 
 def protect_against_icmp_flood():
@@ -259,86 +311,136 @@ def protect_against_icmp_flood():
     Enhanced ICMP flood protection with specific thresholds
     """
     # Basic ICMP rate limiting
-    subprocess.call([
-        "iptables", "-A", "INPUT", "-p", "icmp",
-        "-m", "hashlimit",
-        "--hashlimit-name", "icmpflood",
-        "--hashlimit-above", "100/s",
-        "--hashlimit-burst", "50",
-        "--hashlimit-mode", "srcip",
-        "--hashlimit-htable-expire", "300000",
-        "-j", "DROP"
-    ])
-    
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-p",
+            "icmp",
+            "-m",
+            "hashlimit",
+            "--hashlimit-name",
+            "icmpflood",
+            "--hashlimit-above",
+            "100/s",
+            "--hashlimit-burst",
+            "50",
+            "--hashlimit-mode",
+            "srcip",
+            "--hashlimit-htable-expire",
+            "300000",
+            "-j",
+            "DROP",
+        ]
+    )
+
     # Log ICMP flood attempts
-    subprocess.call([
-        "iptables", "-A", "INPUT", "-p", "icmp",
-        "-m", "hashlimit",
-        "--hashlimit-name", "icmpfloodlog",
-        "--hashlimit-above", "100/s",
-        "--hashlimit-burst", "50",
-        "--hashlimit-mode", "srcip",
-        "-j", "LOG",
-        "--log-prefix", "ICMP_FLOOD: "
-    ])
-    
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-p",
+            "icmp",
+            "-m",
+            "hashlimit",
+            "--hashlimit-name",
+            "icmpfloodlog",
+            "--hashlimit-above",
+            "100/s",
+            "--hashlimit-burst",
+            "50",
+            "--hashlimit-mode",
+            "srcip",
+            "-j",
+            "LOG",
+            "--log-prefix",
+            "ICMP_FLOOD: ",
+        ]
+    )
+
     # Allow some ICMP for normal operation
-    subprocess.call([
-        "iptables", "-A", "INPUT", "-p", "icmp",
-        "-m", "limit",
-        "--limit", "30/s",
-        "--limit-burst", "20",
-        "-j", "ACCEPT"
-    ])
-    
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-p",
+            "icmp",
+            "-m",
+            "limit",
+            "--limit",
+            "30/s",
+            "--limit-burst",
+            "20",
+            "-j",
+            "ACCEPT",
+        ]
+    )
+
     # Drop remaining ICMP
-    subprocess.call([
-        "iptables", "-A", "INPUT",
-        "-p", "icmp",
-        "-j", "DROP"
-    ])
+    subprocess.call(["iptables", "-A", "INPUT", "-p", "icmp", "-j", "DROP"])
 
 
 def limit_connection_rate(config):
     # Per-IP connection limits
-    subprocess.call([
-        "iptables", "-A", "INPUT", "-p", "tcp",
-        "-m", "connlimit",
-        "--connlimit-above", config["tcp_conn_per_ip"],
-        "--connlimit-mask", "32",
-        "-j", "REJECT"
-    ])
-    
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-p",
+            "tcp",
+            "-m",
+            "connlimit",
+            "--connlimit-above",
+            config["tcp_conn_per_ip"],
+            "--connlimit-mask",
+            "32",
+            "-j",
+            "REJECT",
+        ]
+    )
+
     # Global connection limits
-    subprocess.call([
-        "iptables", "-A", "INPUT",
-        "-m", "connlimit",
-        "--connlimit-above", config["connection_limit"],
-        "-j", "REJECT"
-    ])
+    subprocess.call(
+        [
+            "iptables",
+            "-A",
+            "INPUT",
+            "-m",
+            "connlimit",
+            "--connlimit-above",
+            config["connection_limit"],
+            "-j",
+            "REJECT",
+        ]
+    )
 
 
 def enable_dos_protection():
-    """Enable DoS protection with advanced monitoring"""
+    """
+    Enable DoS protection with enhanced features
+    """
     try:
         config = load_dos_config()
-        set_feature_state("dos_protection_enabled", True)
-        log_event("Enhanced DoS protection enabled", "INFO")
-        print("[*] Enhanced DoS protection enabled with adaptive thresholds.")
         
+        # Enable SYN flood protection
         protect_against_syn_flood()
+        
+        # Enable ICMP flood protection
         protect_against_icmp_flood()
+        
+        # Set connection rate limits
         limit_connection_rate(config)
         
-        # Add connection tracking and state monitoring
-        subprocess.call([
-            "iptables", "-A", "INPUT",
-            "-m", "state",
-            "--state", "ESTABLISHED,RELATED",
-            "-j", "ACCEPT"
-        ])
+        # Update feature state
+        set_feature_state("dos_protection", True)
         
+        log_event("Enhanced DoS protection enabled with adaptive thresholds.", "INFO")
         return True
+        
     except Exception as e:
         log_event(f"Failed to enable DoS protection: {str(e)}", "ERROR")
         return False
@@ -351,11 +453,9 @@ def disable_dos_protection():
         log_event("DoS protection disabled", "WARNING")
         print("[*] DoS protection disabled.")
 
-        # Remove only DoS-specific rules
-        subprocess.call(
+        # Remove DoS-specific rules gracefully
+        rules = [
             [
-                "iptables",
-                "-D",
                 "INPUT",
                 "-p",
                 "tcp",
@@ -368,13 +468,9 @@ def disable_dos_protection():
                 "3",
                 "-j",
                 "ACCEPT",
-            ]
-        )
-        subprocess.call(["iptables", "-D", "INPUT", "-p", "tcp", "--syn", "-j", "DROP"])
-        subprocess.call(
+            ],
+            ["INPUT", "-p", "tcp", "--syn", "-j", "DROP"],
             [
-                "iptables",
-                "-D",
                 "INPUT",
                 "-p",
                 "icmp",
@@ -386,13 +482,9 @@ def disable_dos_protection():
                 "5",
                 "-j",
                 "ACCEPT",
-            ]
-        )
-        subprocess.call(["iptables", "-D", "INPUT", "-p", "icmp", "-j", "DROP"])
-        subprocess.call(
+            ],
+            ["INPUT", "-p", "icmp", "-j", "DROP"],
             [
-                "iptables",
-                "-D",
                 "INPUT",
                 "-p",
                 "tcp",
@@ -404,8 +496,17 @@ def disable_dos_protection():
                 "20",
                 "-j",
                 "REJECT",
-            ]
-        )
+            ],
+        ]
+
+        for rule in rules:
+            try:
+                # Try to remove the rule, but don't raise an error if it doesn't exist
+                subprocess.run(
+                    ["iptables", "-D"] + rule, check=False, stderr=subprocess.PIPE
+                )
+            except Exception as e:
+                log_event(f"Error while removing DoS rule: {str(e)}", "WARNING")
 
         return True
     except Exception as e:

@@ -105,9 +105,9 @@ def apply_essential_rules():
 def apply_firewall_rules():
     """Apply the current firewall rules configuration"""
     try:
-        subprocess.run(['sudo', 'iptables', '-F'], check=True)
-        subprocess.run(['sudo', 'iptables', '-X'], check=True)
-        subprocess.run(['sudo', 'iptables', '-Z'], check=True)
+        subprocess.run(["sudo", "iptables", "-F"], check=True)
+        subprocess.run(["sudo", "iptables", "-X"], check=True)
+        subprocess.run(["sudo", "iptables", "-Z"], check=True)
         log_event("Firewall rules cleared", "INFO")
         return True
     except subprocess.CalledProcessError as e:
@@ -335,14 +335,30 @@ def enable_firewall():
         bool: True if firewall was successfully enabled, False otherwise
     """
     try:
+        # Reset to default state
+        reset_firewall()
+
+        # Set default policies
+        set_default_policy()
+
+        # Apply essential rules
+        apply_essential_rules()
+
+        # Enable all protection features
+        from firewall.stateful import enable_stateful_inspection
+        from firewall.dos import enable_dos_protection
+        from firewall.ids_ips import enable_ids_ips
+        
+        enable_stateful_inspection()
+        enable_dos_protection()
+        enable_ids_ips()
+
+        # Update config
         config = load_config()
         config["firewall_enabled"] = True
         save_config(config)
 
-        # Reset to default state
-        reset_firewall()
-
-        log_event("Firewall re-enabled with default configuration", "CRITICAL")
+        log_event("Firewall re-enabled with full protection", "INFO")
         return True
     except Exception as e:
         log_event(f"Failed to enable firewall: {str(e)}", "ERROR")
@@ -352,13 +368,13 @@ def enable_firewall():
 def reset_config():
     """Reset the firewall configuration to default settings"""
     config = {
-        'allowed_ips': [],
-        'blocked_ports': [],
-        'stateful_enabled': True,
-        'ids_ips_enabled': True,
-        'nat_enabled': False,
-        'nat_ip': '',
-        'dos_protection_enabled': True
+        "allowed_ips": [],
+        "blocked_ports": [],
+        "stateful_enabled": True,
+        "ids_ips_enabled": True,
+        "nat_enabled": False,
+        "nat_ip": "",
+        "dos_protection_enabled": True,
     }
     save_config(config)
     log_event("Firewall configuration reset to defaults", "INFO")

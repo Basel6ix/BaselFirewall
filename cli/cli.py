@@ -1,15 +1,22 @@
-import sys
+import sys 
+import os
+from colorama import init, Fore, Style
 from firewall.auth import (
     authenticate,
     is_admin,
     add_user,
     remove_user,
     list_users,
-    log_login_attempt,
-    login
+    log_login_attempt
 )
-from firewall.rules import allow_ip, remove_allowed_ip, block_port, remove_blocked_port
-from firewall.config_manager import load_config, reset_config, set_nat_config, add_allowed_ip, add_blocked_port, remove_allowed_ip, remove_blocked_port, save_config
+from firewall.rules import (
+    allow_ip,
+    remove_allowed_ip,
+    block_port,
+    remove_blocked_port,
+    load_config
+)
+from firewall.config_manager import reset_config, set_nat_config
 from firewall.ids_ips import enable_ids_ips, disable_ids_ips
 from firewall.stateful import enable_stateful_inspection, disable_stateful_inspection
 from firewall.nat import enable_nat, disable_nat
@@ -17,8 +24,6 @@ from firewall.dos import enable_dos_protection, disable_dos_protection
 from firewall.logging import log_event, view_logs, clear_logs
 from firewall.alerts import add_alert, get_live_alerts
 import json
-import os
-from colorama import init, Fore, Style
 
 TEMPLATES_FILE = os.path.join(os.path.dirname(__file__), "../config/templates.json")
 
@@ -73,19 +78,19 @@ def apply_template_cli():
     if not templates:
         print("No templates available.")
         return
-
+    
     print("\nAvailable Templates:")
     for i, name in enumerate(templates.keys(), 1):
         print(f"{i}. {name}")
-
+    
     try:
         choice = int(prompt("\nSelect template number to apply: "))
         if 1 <= choice <= len(templates):
             template_name = list(templates.keys())[choice - 1]
             template = templates[template_name]
-
+            
             config = load_config()
-
+            
             # Apply template settings
             config["blocked_ports"] = template.get("blocked_ports", [])
             config["dos_protection_enabled"] = template.get(
@@ -93,12 +98,12 @@ def apply_template_cli():
             )
             config["ids_ips_enabled"] = template.get("ids_ips_enabled", False)
             config["stateful_enabled"] = template.get("stateful_enabled", False)
-
+            
             # Apply allowed ports
             for port in template.get("allowed_ports", []):
                 if port not in config["blocked_ports"]:
                     config["blocked_ports"].append(port)
-
+            
             if save_config(config):
                 add_alert(f"Applied template: {template_name}", "INFO")
                 log_event(f"Applied template: {template_name}", "INFO")
@@ -116,12 +121,12 @@ def add_template_cli():
     if not name:
         print("Template name cannot be empty.")
         return
-
+    
     templates = load_templates()
     if name in templates:
         print("Template with this name already exists.")
         return
-
+    
     template = {
         "allowed_ports": [],
         "blocked_ports": [],
@@ -129,7 +134,7 @@ def add_template_cli():
         "ids_ips_enabled": True,
         "stateful_enabled": True,
     }
-
+    
     # Get allowed ports
     ports = prompt("Enter allowed ports (comma-separated numbers): ")
     if ports.strip():
@@ -137,7 +142,7 @@ def add_template_cli():
             template["allowed_ports"] = [int(p.strip()) for p in ports.split(",")]
         except ValueError:
             print("Invalid port numbers. Using empty list.")
-
+    
     # Get blocked ports
     ports = prompt("Enter blocked ports (comma-separated numbers): ")
     if ports.strip():
@@ -145,7 +150,7 @@ def add_template_cli():
             template["blocked_ports"] = [int(p.strip()) for p in ports.split(",")]
         except ValueError:
             print("Invalid port numbers. Using empty list.")
-
+    
     # Get feature states
     template["dos_protection_enabled"] = (
         prompt("Enable DoS protection? (yes/no): ").lower() == "yes"
@@ -154,7 +159,7 @@ def add_template_cli():
     template["stateful_enabled"] = (
         prompt("Enable stateful inspection? (yes/no): ").lower() == "yes"
     )
-
+    
     templates[name] = template
     if save_templates(templates):
         add_alert(f"Added new template: {name}", "INFO")
@@ -169,11 +174,11 @@ def delete_template_cli():
     if not templates:
         print("No templates available.")
         return
-
+    
     print("\nAvailable Templates:")
     for i, name in enumerate(templates.keys(), 1):
         print(f"{i}. {name}")
-
+    
     try:
         choice = int(prompt("\nSelect template number to delete: "))
         if 1 <= choice <= len(templates):
@@ -199,6 +204,27 @@ def delete_template_cli():
 
 def prompt(msg):
     return input(msg).strip()
+
+
+def login():
+    """Handle user login"""
+    while True:
+        username = prompt("Username: ")
+        if not username:
+            return None
+        password = prompt("Password: ")
+        if not password:
+            return None
+
+        result = authenticate(username, password)
+        if result:
+            print(f"Welcome, {username}!")
+            return username
+        else:
+            print("Invalid username or password.")
+            retry = prompt("Try again? (yes/no): ")
+            if retry.lower() != "yes":
+                return None
 
 
 def print_menu(is_admin_user):

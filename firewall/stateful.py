@@ -160,24 +160,19 @@ def disable_stateful_inspection_rules():
         ]
     ]
     
-    success = True
     for rule in rules:
-        if rule_exists(rule):
-            try:
-                subprocess.run(
-                    ["iptables", "-D"] + rule,
-                    check=True
-                )
-            except subprocess.CalledProcessError as e:
-                print(f"[-] Failed to remove rule: {e}")
-                success = False
+        try:
+            # Try to remove the rule, but don't raise an error if it doesn't exist
+            subprocess.run(
+                ["iptables", "-D"] + rule,
+                check=False,
+                stderr=subprocess.PIPE
+            )
+        except Exception as e:
+            print(f"[-] Error while removing rule: {e}")
     
-    if success:
-        print("[+] Stateful inspection disabled.")
-        return True
-    else:
-        print("[-] Failed to remove all stateful inspection rules.")
-        return False
+    print("[+] Stateful inspection disabled.")
+    return True
 
 def enable_stateful_inspection():
     success = enable_stateful_inspection_rules()

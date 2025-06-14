@@ -18,11 +18,7 @@ from firewall.nat import enable_nat, disable_nat, configure_nat
 from firewall.dos import enable_dos_protection, disable_dos_protection
 from firewall.ids_ips import enable_ids_ips, disable_ids_ips
 from firewall.stateful import enable_stateful_inspection, disable_stateful_inspection
-from firewall.config_manager import (
-    load_config,
-    save_config,
-    reset_config
-)
+from firewall.config_manager import load_config, save_config, reset_config
 from firewall.logging import log_event, view_logs, clear_logs
 from firewall.alerts import add_alert, get_live_alerts, clear_alerts
 

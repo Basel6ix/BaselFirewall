@@ -21,18 +21,20 @@ from firewall.logging import log_event
 
 class PacketInspector:
     def __init__(self):
-        self.suspicious_ips = defaultdict(lambda: {
-            'count': 0,
-            'first_seen': time.time(),
-            'last_seen': time.time(),
-            'states': defaultdict(int),
-            'ssh_attempts': {
-                'count': 0,
-                'last_attempt': 0,
-                'blocked_until': 0,
-                "failed_usernames": set()
+        self.suspicious_ips = defaultdict(
+            lambda: {
+                "count": 0,
+                "first_seen": time.time(),
+                "last_seen": time.time(),
+                "states": defaultdict(int),
+                "ssh_attempts": {
+                    "count": 0,
+                    "last_attempt": 0,
+                    "blocked_until": 0,
+                    "failed_usernames": set(),
+                },
             }
-        })
+        )
         self.lock = Lock()
         self.config = self._load_ids_config()
 
@@ -49,12 +51,12 @@ class PacketInspector:
                 "ssh_attempt_threshold": 5,
                 "ssh_block_duration": 3600,  # 1 hour
                 "ssh_detection_window": 300,  # 5 minutes
-                "ssh_alert_threshold": 3,     # Alert after 3 failed attempts
-                "port_scan_threshold": 15,    # Number of different ports
-                "port_scan_window": 60,       # Time window in seconds
-                "syn_scan_rate": 100,         # SYNs per second for nmap detection
-                "syn_scan_ports": 10,         # Different ports in short time
-                "syn_scan_window": 5          # Window for SYN scan detection (seconds)
+                "ssh_alert_threshold": 3,  # Alert after 3 failed attempts
+                "port_scan_threshold": 15,  # Number of different ports
+                "port_scan_window": 60,  # Time window in seconds
+                "syn_scan_rate": 100,  # SYNs per second for nmap detection
+                "syn_scan_ports": 10,  # Different ports in short time
+                "syn_scan_window": 5,  # Window for SYN scan detection (seconds)
             }
             save_config(config)
         return config["ids_config"]
@@ -104,39 +106,41 @@ class PacketInspector:
         """
         now = time.time()
         data = self.suspicious_ips[ip]
-        
+
         # Initialize port scan tracking if needed
-        if 'port_scan' not in data:
-            data['port_scan'] = {
-                'ports': set(),
-                'last_scan': 0,
-                'count': 0,
-                'syn_count': 0,
-                'syn_start': now
+        if "port_scan" not in data:
+            data["port_scan"] = {
+                "ports": set(),
+                "last_scan": 0,
+                "count": 0,
+                "syn_count": 0,
+                "syn_start": now,
             }
-        
-        scan_data = data['port_scan']
-        
+
+        scan_data = data["port_scan"]
+
         # Check if this is a SYN packet
         if "SYN" in packet and "ACK" not in packet:
             port_match = re.search(r"dport (\d+)", packet.lower())
             if port_match:
                 port = int(port_match.group(1))
-                
+
                 # Track unique ports
-                scan_data['ports'].add(port)
-                scan_data['syn_count'] += 1
-                
+                scan_data["ports"].add(port)
+                scan_data["syn_count"] += 1
+
                 # Reset counters if window expired
-                if now - scan_data['syn_start'] > self.config['syn_scan_window']:
-                    scan_data['syn_count'] = 1
-                    scan_data['syn_start'] = now
-                    scan_data['ports'] = {port}
-                
+                if now - scan_data["syn_start"] > self.config["syn_scan_window"]:
+                    scan_data["syn_count"] = 1
+                    scan_data["syn_start"] = now
+                    scan_data["ports"] = {port}
+
                 # Check for nmap SYN scan pattern
-                syn_rate = scan_data['syn_count'] / self.config['syn_scan_window']
-                if (syn_rate >= self.config['syn_scan_rate'] and 
-                    len(scan_data['ports']) >= self.config['syn_scan_ports']):
+                syn_rate = scan_data["syn_count"] / self.config["syn_scan_window"]
+                if (
+                    syn_rate >= self.config["syn_scan_rate"]
+                    and len(scan_data["ports"]) >= self.config["syn_scan_ports"]
+                ):
                     message = (
                         f"ALERT: Nmap SYN scan detected from {ip} "
                         f"(Rate: {syn_rate:.1f} SYN/s, Ports: {len(scan_data['ports'])})"
@@ -145,16 +149,16 @@ class PacketInspector:
                     add_alert(message, "WARNING")
                     self._handle_threat(ip, message, "port_scan")
                     return True
-                
+
                 # Check for general port scan pattern
-                if now - scan_data['last_scan'] > self.config['port_scan_window']:
-                    scan_data['count'] = 1
+                if now - scan_data["last_scan"] > self.config["port_scan_window"]:
+                    scan_data["count"] = 1
                 else:
-                    scan_data['count'] += 1
-                
-                scan_data['last_scan'] = now
-                
-                if scan_data['count'] >= self.config['port_scan_threshold']:
+                    scan_data["count"] += 1
+
+                scan_data["last_scan"] = now
+
+                if scan_data["count"] >= self.config["port_scan_threshold"]:
                     message = (
                         f"ALERT: Port scan detected from {ip} "
                         f"({scan_data['count']} ports in {self.config['port_scan_window']}s)"
@@ -163,7 +167,7 @@ class PacketInspector:
                     add_alert(message, "WARNING")
                     self._handle_threat(ip, message, "port_scan")
                     return True
-        
+
         return False
 
     def record_failed_auth(self, ip):
@@ -196,82 +200,130 @@ class PacketInspector:
         Enhanced SSH brute force detection with username tracking and adaptive blocking
         """
         now = time.time()
-        data = self.suspicious_ips[src_ip]['ssh_attempts']
-        
+        data = self.suspicious_ips[src_ip]["ssh_attempts"]
+
         # Check if IP is currently blocked
-        if data['blocked_until'] > now:
-            remaining = int(data['blocked_until'] - now)
-            log_event(f"Blocked SSH attempt from {src_ip} (blocked for {remaining}s more)", "WARNING")
+        if data["blocked_until"] > now:
+            remaining = int(data["blocked_until"] - now)
+            log_event(
+                f"Blocked SSH attempt from {src_ip} (blocked for {remaining}s more)",
+                "WARNING",
+            )
             return True
-            
+
         # Reset counter if detection window has passed
-        if now - data['last_attempt'] > self.config['ssh_detection_window']:
-            data['count'] = 0
-            data['failed_usernames'] = set()
-            
+        if now - data["last_attempt"] > self.config["ssh_detection_window"]:
+            data["count"] = 0
+            data["failed_usernames"] = set()
+
         # Track the attempt
         if not success:
-            data['count'] += 1
+            data["count"] += 1
             if username:
-                data['failed_usernames'].add(username)
-            data['last_attempt'] = now
-            
+                data["failed_usernames"].add(username)
+            data["last_attempt"] = now
+
             # Alert on suspicious activity
-            if data['count'] >= self.config['ssh_alert_threshold']:
-                message = (f"SSH brute force attempt detected from {src_ip} "
-                         f"({data['count']} failed attempts, "
-                         f"usernames: {', '.join(data['failed_usernames'])})")
+            if data["count"] >= self.config["ssh_alert_threshold"]:
+                message = (
+                    f"SSH brute force attempt detected from {src_ip} "
+                    f"({data['count']} failed attempts, "
+                    f"usernames: {', '.join(data['failed_usernames'])})"
+                )
                 log_event(message, "WARNING")
-                
+
             # Block if threshold exceeded
-            if data['count'] >= self.config['ssh_attempt_threshold']:
-                data['blocked_until'] = now + self.config['ssh_block_duration']
-                message = (f"Blocking SSH from {src_ip} for {self.config['ssh_block_duration']}s "
-                         f"due to brute force attempt")
+            if data["count"] >= self.config["ssh_attempt_threshold"]:
+                data["blocked_until"] = now + self.config["ssh_block_duration"]
+                message = (
+                    f"Blocking SSH from {src_ip} for {self.config['ssh_block_duration']}s "
+                    f"due to brute force attempt"
+                )
                 log_event(message, "WARNING")
-                
+
                 # Add IPTables rules
                 try:
                     # Drop all SSH traffic from this IP
-                    subprocess.run([
-                        "iptables", "-A", "INPUT", "-p", "tcp",
-                        "--dport", "22", "-s", src_ip,
-                        "-j", "DROP"
-                    ], check=True)
-                    
+                    subprocess.run(
+                        [
+                            "iptables",
+                            "-A",
+                            "INPUT",
+                            "-p",
+                            "tcp",
+                            "--dport",
+                            "22",
+                            "-s",
+                            src_ip,
+                            "-j",
+                            "DROP",
+                        ],
+                        check=True,
+                    )
+
                     # Add rule to remove the block after duration
-                    unblock_cmd = f"iptables -D INPUT -p tcp --dport 22 -s {src_ip} -j DROP"
-                    subprocess.run([
-                        "at", "now", "+", 
-                        str(self.config['ssh_block_duration']), 
-                        "seconds"
-                    ], input=unblock_cmd.encode(), check=True)
-                    
+                    unblock_cmd = (
+                        f"iptables -D INPUT -p tcp --dport 22 -s {src_ip} -j DROP"
+                    )
+                    subprocess.run(
+                        [
+                            "at",
+                            "now",
+                            "+",
+                            str(self.config["ssh_block_duration"]),
+                            "seconds",
+                        ],
+                        input=unblock_cmd.encode(),
+                        check=True,
+                    )
+
                     return True
                 except subprocess.CalledProcessError as e:
-                    log_event(f"Failed to add IPTables rule for SSH blocking: {e}", "ERROR")
-        
+                    log_event(
+                        f"Failed to add IPTables rule for SSH blocking: {e}", "ERROR"
+                    )
+
         return False
 
     def _handle_threat(self, ip, message, attack_type):
         print(message)
         add_alert(message, "WARNING")
         log_event(message, "WARNING")
-        
+
         # Add specific response based on attack type
         if attack_type == "port_scan":
             # Block IP for 1 hour for port scanning
-            subprocess.run(["iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"], check=True)
-            subprocess.run(["at", "now + 1 hour", "-f", f"iptables -D INPUT -s {ip} -j DROP"], check=True)
+            subprocess.run(
+                ["iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"], check=True
+            )
+            subprocess.run(
+                ["at", "now + 1 hour", "-f", f"iptables -D INPUT -s {ip} -j DROP"],
+                check=True,
+            )
         elif attack_type in ["syn_flood", "dos"]:
             # Rate limit the IP
-            subprocess.run([
-                "iptables", "-A", "INPUT", "-s", ip,
-                "-m", "limit", "--limit", "5/min", "--limit-burst", "10",
-                "-j", "ACCEPT"
-            ], check=True)
-            subprocess.run(["iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"], check=True)
-        
+            subprocess.run(
+                [
+                    "iptables",
+                    "-A",
+                    "INPUT",
+                    "-s",
+                    ip,
+                    "-m",
+                    "limit",
+                    "--limit",
+                    "5/min",
+                    "--limit-burst",
+                    "10",
+                    "-j",
+                    "ACCEPT",
+                ],
+                check=True,
+            )
+            subprocess.run(
+                ["iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"], check=True
+            )
+
         add_blocked_ip(ip)
 
 
@@ -380,11 +432,11 @@ def is_suspicious_ip(ip):
     """Check if an IP address is suspicious based on known patterns"""
     # Check if IP is in known malicious ranges
     suspicious_ranges = [
-        '185.0.0.0/8',  # Known for hosting malicious content
-        '194.0.0.0/8',  # Common source of attacks
-        '45.0.0.0/8'    # Often used in botnets
+        "185.0.0.0/8",  # Known for hosting malicious content
+        "194.0.0.0/8",  # Common source of attacks
+        "45.0.0.0/8",  # Often used in botnets
     ]
-    
+
     for ip_range in suspicious_ranges:
         if ip_in_network(ip, ip_range):
             return True
